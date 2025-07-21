@@ -25,10 +25,11 @@ The application follows a modular architecture with clear separation of concerns
 ## Key Components
 
 ### 1. AI Processing (`ai_processor.py`)
-- **Purpose**: Extracts action items from meeting notes using Perplexity Pro API
+- **Purpose**: Extracts action items from meeting notes using configurable AI backends
 - **Features**: Auto-categorization, auto-delegation suggestions, priority assessment
-- **Fallback**: Includes fallback extraction methods when API is unavailable
-- **Model**: Configured to use llama-3.1-sonar-small-128k-online by default
+- **Backends**: Supports Perplexity Pro API, Ollama (local), and OpenAI
+- **Fallback**: Includes fallback extraction methods when AI is unavailable
+- **Default Model**: llama-3.1-sonar-small-128k-online (Perplexity) or llama3.1:8b (Ollama)
 
 ### 2. Task Management (`task_manager.py`)
 - **Purpose**: Handles core task management logic
@@ -73,9 +74,11 @@ The application follows a modular architecture with clear separation of concerns
 - **Pandas**: Data manipulation and analysis
 - **Requests**: HTTP library for API communication
 
-### API Dependencies
-- **Perplexity Pro API**: Required for AI-powered action item extraction
-- **Environment Variables**: PERPLEXITY_API_KEY for API authentication
+### AI Backend Dependencies
+- **Perplexity Pro API**: Cloud-based AI processing (requires PERPLEXITY_API_KEY)
+- **Ollama**: Local LLM processing (requires local Ollama installation)
+- **OpenAI API**: Cloud-based AI processing (requires OPENAI_API_KEY)
+- **Environment Variables**: Backend-specific API keys and configuration
 
 ### Data Dependencies
 - **JSON Files**: Local file system for data persistence
@@ -98,8 +101,9 @@ The application follows a modular architecture with clear separation of concerns
 
 1. **File-based Storage**: Chosen for simplicity and single-user focus, with easy migration path to databases
 2. **Modular Design**: Each component is independent, allowing for easy testing and maintenance
-3. **AI Integration**: OpenAI API provides advanced natural language processing capabilities
-4. **Fallback Mechanisms**: Application remains functional even when AI services are unavailable
-5. **Session State Management**: Streamlit's session state provides seamless user experience across page navigation
+3. **Flexible AI Integration**: Multi-backend AI support (Perplexity, Ollama, OpenAI) provides choice between cloud and local processing
+4. **Local AI Support**: Ollama integration enables privacy-focused, offline AI processing without external API dependencies
+5. **Fallback Mechanisms**: Application remains functional even when AI services are unavailable
+6. **Session State Management**: Streamlit's session state provides seamless user experience across page navigation
 
 The architecture prioritizes ease of use, modularity, and extensibility while maintaining a focus on tech leadership use cases.

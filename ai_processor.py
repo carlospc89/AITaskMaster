@@ -6,18 +6,67 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
 class AIProcessor:
-    def __init__(self):
-        # Using Perplexity Pro API with llama-3.1-sonar-small-128k-online model
-        self.model = "llama-3.1-sonar-small-128k-online"
-        self.api_key = os.getenv("PERPLEXITY_API_KEY")
-        self.base_url = "https://api.perplexity.ai/chat/completions"
+    def __init__(self, backend="perplexity"):
+        """
+        Initialize AI Processor with configurable backend.
         
-        if self.api_key:
-            self.api_available = True
-        else:
+        Args:
+            backend (str): AI backend to use - "perplexity", "ollama", or "openai"
+        """
+        self.backend = backend
+        self.api_available = False
+        
+        if backend == "perplexity":
+            self.model = "llama-3.1-sonar-small-128k-online"
+            self.api_key = os.getenv("PERPLEXITY_API_KEY")
+            self.base_url = "https://api.perplexity.ai/chat/completions"
+            self.api_available = bool(self.api_key)
+            
+        elif backend == "ollama":
+            self.model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")  # Default to llama3.1:8b
+            self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+            self.api_key = None  # Ollama doesn't require API keys
+            self._check_ollama_availability()
+            
+        elif backend == "openai":
+            self.model = "gpt-4o"
+            self.api_key = os.getenv("OPENAI_API_KEY")
+            self.base_url = "https://api.openai.com/v1/chat/completions"
+            self.api_available = bool(self.api_key)
+    
+    def _check_ollama_availability(self):
+        """Check if Ollama is running and the model is available."""
+        try:
+            # Check if Ollama is running
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            if response.status_code == 200:
+                models = response.json().get('models', [])
+                model_names = [model['name'] for model in models]
+                
+                # Check if the specified model is available
+                if any(self.model in model_name for model_name in model_names):
+                    self.api_available = True
+                else:
+                    print(f"Ollama model '{self.model}' not found. Available models: {model_names}")
+                    self.api_available = False
+            else:
+                self.api_available = False
+        except Exception as e:
+            print(f"Ollama not available: {e}")
             self.api_available = False
     
     def _make_api_request(self, messages: List[Dict[str, str]], max_tokens: int = 1000, temperature: float = 0.2) -> Dict:
+        """Make a request to the configured AI backend."""
+        if self.backend == "ollama":
+            return self._make_ollama_request(messages, max_tokens, temperature)
+        elif self.backend == "perplexity":
+            return self._make_perplexity_request(messages, max_tokens, temperature)
+        elif self.backend == "openai":
+            return self._make_openai_request(messages, max_tokens, temperature)
+        else:
+            raise ValueError(f"Unsupported backend: {self.backend}")
+    
+    def _make_perplexity_request(self, messages: List[Dict[str, str]], max_tokens: int, temperature: float) -> Dict:
         """Make a request to Perplexity API."""
         headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -38,6 +87,75 @@ class AIProcessor:
         response = requests.post(self.base_url, headers=headers, json=payload)
         response.raise_for_status()
         return response.json()
+    
+    def _make_ollama_request(self, messages: List[Dict[str, str]], max_tokens: int, temperature: float) -> Dict:
+        """Make a request to Ollama API."""
+        headers = {'Content-Type': 'application/json'}
+        
+        # Convert messages to Ollama format
+        prompt = self._convert_messages_to_prompt(messages)
+        
+        payload = {
+            'model': self.model,
+            'prompt': prompt,
+            'stream': False,
+            'options': {
+                'temperature': temperature,
+                'num_predict': max_tokens,
+            }
+        }
+        
+        response = requests.post(f"{self.base_url}/api/generate", headers=headers, json=payload)
+        response.raise_for_status()
+        
+        # Convert Ollama response to OpenAI-like format for compatibility
+        ollama_response = response.json()
+        return {
+            'choices': [{
+                'message': {
+                    'content': ollama_response.get('response', '')
+                }
+            }]
+        }
+    
+    def _make_openai_request(self, messages: List[Dict[str, str]], max_tokens: int, temperature: float) -> Dict:
+        """Make a request to OpenAI API."""
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'model': self.model,
+            'messages': messages,
+            'max_tokens': max_tokens,
+            'temperature': temperature,
+            'top_p': 0.9,
+            'stream': False,
+            'presence_penalty': 0,
+            'frequency_penalty': 0
+        }
+        
+        response = requests.post(self.base_url, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+    
+    def _convert_messages_to_prompt(self, messages: List[Dict[str, str]]) -> str:
+        """Convert OpenAI-style messages to a single prompt for Ollama."""
+        prompt_parts = []
+        
+        for message in messages:
+            role = message.get('role', 'user')
+            content = message.get('content', '')
+            
+            if role == 'system':
+                prompt_parts.append(f"System: {content}")
+            elif role == 'user':
+                prompt_parts.append(f"User: {content}")
+            elif role == 'assistant':
+                prompt_parts.append(f"Assistant: {content}")
+        
+        return "\n\n".join(prompt_parts) + "\n\nAssistant:"
     
     def extract_action_items(self, text: str, auto_categorize: bool = True, auto_delegate: bool = True) -> List[Dict[str, Any]]:
         """Extract action items from meeting notes or text using AI."""

@@ -17,14 +17,16 @@ if 'tasks' not in st.session_state:
     st.session_state.tasks = []
 if 'delegations' not in st.session_state:
     st.session_state.delegations = []
-if 'ai_processor' not in st.session_state:
-    st.session_state.ai_processor = AIProcessor()
+if 'data_handler' not in st.session_state:
+    st.session_state.data_handler = DataHandler()
 if 'task_manager' not in st.session_state:
     st.session_state.task_manager = TaskManager()
 if 'viz_manager' not in st.session_state:
     st.session_state.viz_manager = VisualizationManager()
-if 'data_handler' not in st.session_state:
-    st.session_state.data_handler = DataHandler()
+if 'ai_processor' not in st.session_state:
+    # Initialize AI processor with saved backend preference
+    backend = st.session_state.data_handler.load_settings().get('ai_backend', 'perplexity')
+    st.session_state.ai_processor = AIProcessor(backend=backend)
 
 # Load existing data
 st.session_state.tasks = st.session_state.data_handler.load_tasks()
@@ -45,7 +47,7 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
         "Choose a section:",
-        ["Dashboard", "AI Action Item Extraction", "Task Management", "Delegation Tracking", "Timeline & Analytics", "Data Management"]
+        ["Dashboard", "AI Action Item Extraction", "Task Management", "Delegation Tracking", "Timeline & Analytics", "Settings", "Data Management"]
     )
     
     if page == "Dashboard":
@@ -58,6 +60,8 @@ def main():
         show_delegation_tracking()
     elif page == "Timeline & Analytics":
         show_timeline_analytics()
+    elif page == "Settings":
+        show_settings()
     elif page == "Data Management":
         show_data_management()
 
@@ -839,6 +843,214 @@ def show_data_management():
             st.session_state.data_handler.save_delegations(st.session_state.delegations)
             st.success("All data cleared!")
             st.rerun()
+
+def show_settings():
+    st.header("⚙️ Application Settings")
+    
+    # Load current settings
+    current_settings = st.session_state.data_handler.load_settings()
+    
+    # AI Backend Configuration
+    st.subheader("🤖 AI Backend Configuration")
+    st.markdown("Choose which AI service to use for action item extraction and insights:")
+    
+    backend_options = {
+        "perplexity": "Perplexity Pro (Cloud API)",
+        "ollama": "Ollama (Local LLM)",
+        "openai": "OpenAI GPT (Cloud API)"
+    }
+    
+    current_backend = current_settings.get('ai_backend', 'perplexity')
+    
+    selected_backend = st.radio(
+        "AI Backend:",
+        options=list(backend_options.keys()),
+        format_func=lambda x: backend_options[x],
+        index=list(backend_options.keys()).index(current_backend)
+    )
+    
+    # Backend-specific configuration
+    if selected_backend == "ollama":
+        st.subheader("🦙 Ollama Configuration")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            ollama_url = st.text_input(
+                "Ollama Server URL:",
+                value=current_settings.get('ollama_base_url', 'http://localhost:11434'),
+                help="URL where your Ollama server is running"
+            )
+        
+        with col2:
+            ollama_model = st.text_input(
+                "Ollama Model:",
+                value=current_settings.get('ollama_model', 'llama3.1:8b'),
+                help="Model name (e.g., llama3.1:8b, mistral:latest, codellama:13b)"
+            )
+        
+        # Test Ollama connection
+        if st.button("🔍 Test Ollama Connection", type="secondary"):
+            with st.spinner("Testing connection..."):
+                import os
+                os.environ["OLLAMA_BASE_URL"] = ollama_url
+                os.environ["OLLAMA_MODEL"] = ollama_model
+                
+                test_processor = AIProcessor(backend="ollama")
+                
+                if test_processor.api_available:
+                    st.success("✅ Ollama connection successful!")
+                    st.info(f"Connected to: {ollama_url}")
+                    st.info(f"Using model: {ollama_model}")
+                else:
+                    st.error("❌ Could not connect to Ollama")
+                    st.error("Please ensure:")
+                    st.write("1. Ollama is installed and running")
+                    st.write("2. The server URL is correct")
+                    st.write("3. The specified model is pulled")
+                    
+                    with st.expander("📖 Setup Instructions"):
+                        st.markdown("""
+                        **To set up Ollama locally:**
+                        
+                        1. **Install Ollama:**
+                           ```bash
+                           # On macOS/Linux
+                           curl -fsSL https://ollama.ai/install.sh | sh
+                           
+                           # On Windows, download from ollama.ai
+                           ```
+                        
+                        2. **Start Ollama:**
+                           ```bash
+                           ollama serve
+                           ```
+                        
+                        3. **Pull a model:**
+                           ```bash
+                           ollama pull llama3.1:8b
+                           # or other models: mistral, codellama, etc.
+                           ```
+                        
+                        4. **Verify installation:**
+                           ```bash
+                           ollama list
+                           ```
+                        """)
+    
+    elif selected_backend == "perplexity":
+        st.subheader("🔍 Perplexity Configuration")
+        st.info("Perplexity Pro API key should be set in environment variables as PERPLEXITY_API_KEY")
+        
+        # Test Perplexity connection
+        if st.button("🔍 Test Perplexity Connection", type="secondary"):
+            with st.spinner("Testing connection..."):
+                test_processor = AIProcessor(backend="perplexity")
+                
+                if test_processor.api_available:
+                    st.success("✅ Perplexity connection successful!")
+                else:
+                    st.error("❌ Perplexity API key not found or invalid")
+                    st.info("Please add your PERPLEXITY_API_KEY to the secrets")
+    
+    elif selected_backend == "openai":
+        st.subheader("🧠 OpenAI Configuration")
+        st.info("OpenAI API key should be set in environment variables as OPENAI_API_KEY")
+        
+        # Test OpenAI connection
+        if st.button("🔍 Test OpenAI Connection", type="secondary"):
+            with st.spinner("Testing connection..."):
+                test_processor = AIProcessor(backend="openai")
+                
+                if test_processor.api_available:
+                    st.success("✅ OpenAI connection successful!")
+                else:
+                    st.error("❌ OpenAI API key not found or invalid")
+                    st.info("Please add your OPENAI_API_KEY to the secrets")
+    
+    # General Settings
+    st.subheader("⚙️ General Settings")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        auto_save = st.checkbox(
+            "Auto-save data",
+            value=current_settings.get('auto_save', True),
+            help="Automatically save tasks and delegations"
+        )
+        
+        ai_suggestions = st.checkbox(
+            "Enable AI suggestions",
+            value=current_settings.get('ai_suggestions_enabled', True),
+            help="Show AI-generated insights and suggestions"
+        )
+        
+        default_task_duration = st.number_input(
+            "Default task duration (hours):",
+            min_value=0.5,
+            max_value=40.0,
+            step=0.5,
+            value=current_settings.get('default_task_duration', 1.0)
+        )
+    
+    with col2:
+        working_hours = st.number_input(
+            "Working hours per day:",
+            min_value=1,
+            max_value=24,
+            step=1,
+            value=current_settings.get('working_hours_per_day', 8)
+        )
+        
+        tasks_per_page = st.number_input(
+            "Tasks per page:",
+            min_value=5,
+            max_value=100,
+            step=5,
+            value=current_settings.get('display_preferences', {}).get('tasks_per_page', 20)
+        )
+        
+        show_completed = st.checkbox(
+            "Show completed tasks by default",
+            value=current_settings.get('display_preferences', {}).get('show_completed_tasks', False)
+        )
+    
+    # Save settings
+    if st.button("💾 Save Settings", type="primary"):
+        new_settings = {
+            'ai_backend': selected_backend,
+            'auto_save': auto_save,
+            'ai_suggestions_enabled': ai_suggestions,
+            'default_task_duration': default_task_duration,
+            'working_hours_per_day': working_hours,
+            'display_preferences': {
+                'tasks_per_page': tasks_per_page,
+                'show_completed_tasks': show_completed
+            }
+        }
+        
+        # Add backend-specific settings
+        if selected_backend == "ollama":
+            new_settings['ollama_base_url'] = ollama_url
+            new_settings['ollama_model'] = ollama_model
+            
+            # Update environment variables
+            import os
+            os.environ["OLLAMA_BASE_URL"] = ollama_url
+            os.environ["OLLAMA_MODEL"] = ollama_model
+        
+        # Save settings
+        if st.session_state.data_handler.save_settings(new_settings):
+            st.success("✅ Settings saved successfully!")
+            
+            # Reinitialize AI processor if backend changed
+            if selected_backend != current_backend:
+                st.session_state.ai_processor = AIProcessor(backend=selected_backend)
+                st.info(f"🔄 AI backend switched to {backend_options[selected_backend]}")
+            
+            st.rerun()
+        else:
+            st.error("❌ Failed to save settings")
 
 if __name__ == "__main__":
     main()
