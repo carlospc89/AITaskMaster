@@ -37,32 +37,42 @@ def main():
         page_title="AI Task & Delegation Manager",
         page_icon="🎯",
         layout="wide",
-        initial_sidebar_state="expanded"
+        initial_sidebar_state="collapsed"
     )
     
     st.title("🎯 AI-Powered Task & Delegation Manager")
     st.markdown("*Automated action item extraction, prioritization, and timeline visualization for tech leadership*")
     
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox(
-        "Choose a section:",
-        ["Dashboard", "AI Action Item Extraction", "Task Management", "Delegation Tracking", "Timeline & Analytics", "Settings", "Data Management"]
-    )
+    # Tab navigation
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        "📊 Dashboard", 
+        "🤖 AI Extraction", 
+        "📋 Tasks", 
+        "👥 Delegation", 
+        "📈 Analytics", 
+        "⚙️ Settings",
+        "🗂️ Data"
+    ])
     
-    if page == "Dashboard":
+    with tab1:
         show_dashboard()
-    elif page == "AI Action Item Extraction":
+    
+    with tab2:
         show_ai_extraction()
-    elif page == "Task Management":
+    
+    with tab3:
         show_task_management()
-    elif page == "Delegation Tracking":
+    
+    with tab4:
         show_delegation_tracking()
-    elif page == "Timeline & Analytics":
+    
+    with tab5:
         show_timeline_analytics()
-    elif page == "Settings":
+    
+    with tab6:
         show_settings()
-    elif page == "Data Management":
+    
+    with tab7:
         show_data_management()
 
 def show_dashboard():
