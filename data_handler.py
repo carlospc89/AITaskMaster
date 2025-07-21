@@ -2,6 +2,7 @@ import json
 import os
 from typing import List, Dict, Any
 from datetime import datetime
+from database import DatabaseManager, migrate_from_json_to_db
 
 class DataHandler:
     def __init__(self):
@@ -14,110 +15,135 @@ class DataHandler:
         self.tasks_file = os.path.join("data", self.tasks_file)
         self.delegations_file = os.path.join("data", self.delegations_file)
         self.settings_file = os.path.join("data", self.settings_file)
+        
+        # Initialize database manager
+        self.db_manager = DatabaseManager()
+        
+        # Check for existing JSON data and migrate if needed
+        self._check_and_migrate_data()
+    
+    def _check_and_migrate_data(self):
+        """Check for existing JSON data and migrate to database if found"""
+        try:
+            # Check if we have existing JSON data but empty database
+            db_task_count = len(self.db_manager.get_all_tasks())
+            
+            if db_task_count == 0:
+                # Check for JSON files
+                json_tasks_exist = os.path.exists(self.tasks_file)
+                json_delegations_exist = os.path.exists(self.delegations_file)
+                json_settings_exist = os.path.exists(self.settings_file)
+                
+                if json_tasks_exist or json_delegations_exist or json_settings_exist:
+                    print("Found existing JSON data. Migrating to database...")
+                    if migrate_from_json_to_db(self, self.db_manager):
+                        # Backup JSON files after successful migration
+                        self._backup_json_files()
+                        print("Migration completed successfully!")
+                    else:
+                        print("Migration failed, keeping JSON files as backup")
+        except Exception as e:
+            print(f"Migration check failed: {e}")
+    
+    def _backup_json_files(self):
+        """Backup JSON files after migration"""
+        backup_dir = os.path.join("data", "json_backup")
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        for file_path in [self.tasks_file, self.delegations_file, self.settings_file]:
+            if os.path.exists(file_path):
+                backup_path = os.path.join(backup_dir, f"{os.path.basename(file_path)}.backup")
+                os.rename(file_path, backup_path)
+                print(f"Backed up {file_path} to {backup_path}")
     
     def save_tasks(self, tasks: List[Dict[str, Any]]) -> bool:
-        """Save tasks to JSON file."""
+        """Save tasks to database."""
         try:
-            # Add timestamp
-            data = {
-                'tasks': tasks,
-                'last_updated': datetime.now().isoformat(),
-                'version': '1.0'
-            }
-            
-            with open(self.tasks_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            # Save each task individually to the database
+            for task in tasks:
+                if 'created_date' not in task:
+                    task['created_date'] = datetime.now().strftime('%Y-%m-%d')
+                self.db_manager.save_task(task)
             return True
         except Exception as e:
             print(f"Error saving tasks: {e}")
             return False
     
     def load_tasks(self) -> List[Dict[str, Any]]:
-        """Load tasks from JSON file."""
+        """Load tasks from database."""
         try:
-            if os.path.exists(self.tasks_file):
-                with open(self.tasks_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                # Handle different data formats
-                if isinstance(data, dict) and 'tasks' in data:
-                    return data['tasks']
-                elif isinstance(data, list):
-                    return data
-                else:
-                    return []
-            else:
-                return []
+            return self.db_manager.get_all_tasks()
         except Exception as e:
             print(f"Error loading tasks: {e}")
             return []
     
+    def save_single_task(self, task: Dict[str, Any]) -> int:
+        """Save a single task to database and return its ID"""
+        if 'created_date' not in task:
+            task['created_date'] = datetime.now().strftime('%Y-%m-%d')
+        return self.db_manager.save_task(task)
+    
+    def get_task_by_id(self, task_id: int) -> Dict[str, Any]:
+        """Get a specific task by ID"""
+        return self.db_manager.get_task_by_id(task_id)
+    
+    def delete_task(self, task_id: int) -> bool:
+        """Delete a task by ID"""
+        return self.db_manager.delete_task(task_id)
+    
     def save_delegations(self, delegations: List[Dict[str, Any]]) -> bool:
-        """Save delegations to JSON file."""
+        """Save delegations to database."""
         try:
-            # Add timestamp
-            data = {
-                'delegations': delegations,
-                'last_updated': datetime.now().isoformat(),
-                'version': '1.0'
-            }
-            
-            with open(self.delegations_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            # Save each delegation individually to the database
+            for delegation in delegations:
+                if 'delegation_date' not in delegation:
+                    delegation['delegation_date'] = datetime.now().strftime('%Y-%m-%d')
+                self.db_manager.save_delegation(delegation)
             return True
         except Exception as e:
             print(f"Error saving delegations: {e}")
             return False
     
     def load_delegations(self) -> List[Dict[str, Any]]:
-        """Load delegations from JSON file."""
+        """Load delegations from database."""
         try:
-            if os.path.exists(self.delegations_file):
-                with open(self.delegations_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                # Handle different data formats
-                if isinstance(data, dict) and 'delegations' in data:
-                    return data['delegations']
-                elif isinstance(data, list):
-                    return data
-                else:
-                    return []
-            else:
-                return []
+            return self.db_manager.get_all_delegations()
         except Exception as e:
             print(f"Error loading delegations: {e}")
             return []
     
+    def save_single_delegation(self, delegation: Dict[str, Any]) -> int:
+        """Save a single delegation to database and return its ID"""
+        if 'delegation_date' not in delegation:
+            delegation['delegation_date'] = datetime.now().strftime('%Y-%m-%d')
+        return self.db_manager.save_delegation(delegation)
+    
+    def get_delegations_for_task(self, task_id: int) -> List[Dict[str, Any]]:
+        """Get delegations for a specific task"""
+        return self.db_manager.get_delegations_for_task(task_id)
+    
+    def delete_delegation(self, delegation_id: int) -> bool:
+        """Delete a delegation by ID"""
+        return self.db_manager.delete_delegation(delegation_id)
+    
     def save_settings(self, settings: Dict[str, Any]) -> bool:
-        """Save application settings."""
+        """Save application settings to database."""
         try:
-            data = {
-                'settings': settings,
-                'last_updated': datetime.now().isoformat(),
-                'version': '1.0'
-            }
-            
-            with open(self.settings_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            # Save each setting individually
+            for key, value in settings.items():
+                self.db_manager.save_setting(key, value)
             return True
         except Exception as e:
             print(f"Error saving settings: {e}")
             return False
     
     def load_settings(self) -> Dict[str, Any]:
-        """Load application settings."""
+        """Load application settings from database."""
         try:
-            if os.path.exists(self.settings_file):
-                with open(self.settings_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                if isinstance(data, dict) and 'settings' in data:
-                    return data['settings']
-                else:
-                    return self.get_default_settings()
-            else:
+            settings = self.db_manager.get_all_settings()
+            if not settings:
                 return self.get_default_settings()
+            return settings
         except Exception as e:
             print(f"Error loading settings: {e}")
             return self.get_default_settings()
@@ -303,57 +329,30 @@ class DataHandler:
             return False
     
     def get_data_statistics(self) -> Dict[str, Any]:
-        """Get statistics about stored data."""
+        """Get statistics about stored data from database."""
         try:
-            tasks = self.load_tasks()
-            delegations = self.load_delegations()
-            
-            stats = {
-                'tasks': {
-                    'total_count': len(tasks),
-                    'by_status': {},
-                    'by_priority': {},
-                    'by_category': {},
-                    'ai_generated': len([t for t in tasks if t.get('created_by_ai')])
-                },
-                'delegations': {
-                    'total_count': len(delegations),
-                    'by_status': {},
-                    'by_delegate': {}
-                },
-                'storage': {
-                    'tasks_file_size': os.path.getsize(self.tasks_file) if os.path.exists(self.tasks_file) else 0,
-                    'delegations_file_size': os.path.getsize(self.delegations_file) if os.path.exists(self.delegations_file) else 0,
-                    'settings_file_size': os.path.getsize(self.settings_file) if os.path.exists(self.settings_file) else 0
-                }
-            }
-            
-            # Calculate task statistics
-            for task in tasks:
-                # Status distribution
-                status = task.get('status', 'Unknown')
-                stats['tasks']['by_status'][status] = stats['tasks']['by_status'].get(status, 0) + 1
-                
-                # Priority distribution
-                priority = task.get('priority', 'Unknown')
-                stats['tasks']['by_priority'][priority] = stats['tasks']['by_priority'].get(priority, 0) + 1
-                
-                # Category distribution
-                category = task.get('category', 'Unknown')
-                stats['tasks']['by_category'][category] = stats['tasks']['by_category'].get(category, 0) + 1
-            
-            # Calculate delegation statistics
-            for delegation in delegations:
-                # Status distribution
-                status = delegation.get('status', 'Unknown')
-                stats['delegations']['by_status'][status] = stats['delegations']['by_status'].get(status, 0) + 1
-                
-                # Delegate distribution
-                delegate = delegation.get('delegate_to', 'Unknown')
-                stats['delegations']['by_delegate'][delegate] = stats['delegations']['by_delegate'].get(delegate, 0) + 1
-            
-            return stats
-            
+            return self.db_manager.get_database_stats()
         except Exception as e:
             print(f"Error getting data statistics: {e}")
             return {}
+    
+    def clear_all_data(self) -> bool:
+        """Clear all data from database."""
+        return self.db_manager.clear_all_data()
+    
+    def backup_database(self, backup_path: str = None) -> bool:
+        """Create backup of SQLite database."""
+        try:
+            import shutil
+            if backup_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_dir = os.path.join("data", "backups")
+                os.makedirs(backup_dir, exist_ok=True)
+                backup_path = os.path.join(backup_dir, f"database_backup_{timestamp}.db")
+            
+            shutil.copy2(self.db_manager.db_path, backup_path)
+            print(f"Database backed up to: {backup_path}")
+            return True
+        except Exception as e:
+            print(f"Error backing up database: {e}")
+            return False

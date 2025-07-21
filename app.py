@@ -807,52 +807,66 @@ def show_data_management():
             except Exception as e:
                 st.error(f"Error importing delegations: {str(e)}")
     
-    # Data statistics
-    st.subheader("📊 Data Statistics")
+    # Database statistics
+    st.subheader("💾 Database Information")
+    
+    # Get database stats
+    db_stats = st.session_state.data_handler.get_data_statistics()
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Tasks", len(st.session_state.tasks))
+        st.metric("Total Tasks", db_stats.get('total_tasks', 0))
     with col2:
-        st.metric("Total Delegations", len(st.session_state.delegations))
+        st.metric("Total Delegations", db_stats.get('total_delegations', 0))
     with col3:
-        ai_tasks = len([t for t in st.session_state.tasks if t.get('created_by_ai')])
-        st.metric("AI-Generated Tasks", ai_tasks)
+        st.metric("AI-Generated Tasks", db_stats.get('ai_generated_tasks', 0))
     with col4:
-        manual_tasks = len(st.session_state.tasks) - ai_tasks
-        st.metric("Manual Tasks", manual_tasks)
+        st.metric("Completed Tasks", db_stats.get('completed_tasks', 0))
+    
+    # Database details
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Database Location:**")
+        st.code(db_stats.get('database_path', 'Unknown'))
+        
+    with col2:
+        st.write("**Database Size:**")
+        st.info(db_stats.get('database_size', '0 KB'))
+    
+    # Backup database
+    st.subheader("💾 Database Backup")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📥 Create Database Backup", type="secondary"):
+            if st.session_state.data_handler.backup_database():
+                st.success("✅ Database backup created successfully!")
+            else:
+                st.error("❌ Failed to create database backup")
+    
+    with col2:
+        st.write("**Info:** Database backups are stored in the `data/backups/` folder")
     
     # Clear data
     st.subheader("🗑️ Clear Data")
     st.warning("⚠️ These actions cannot be undone!")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("Clear All Tasks", type="secondary"):
-            if st.session_state.tasks:
+        if st.button("🗑️ Clear All Data", type="secondary", help="Removes all tasks, delegations, and settings from the database"):
+            if st.session_state.data_handler.clear_all_data():
                 st.session_state.tasks = []
-                st.session_state.data_handler.save_tasks(st.session_state.tasks)
-                st.success("All tasks cleared!")
+                st.session_state.delegations = []
+                st.success("All data cleared from database!")
                 st.rerun()
+            else:
+                st.error("Failed to clear data")
     
     with col2:
-        if st.button("Clear All Delegations", type="secondary"):
-            if st.session_state.delegations:
-                st.session_state.delegations = []
-                st.session_state.data_handler.save_delegations(st.session_state.delegations)
-                st.success("All delegations cleared!")
-                st.rerun()
-    
-    with col3:
-        if st.button("Clear Everything", type="secondary"):
-            st.session_state.tasks = []
-            st.session_state.delegations = []
-            st.session_state.data_handler.save_tasks(st.session_state.tasks)
-            st.session_state.data_handler.save_delegations(st.session_state.delegations)
-            st.success("All data cleared!")
-            st.rerun()
+        st.write("**Note:** This will permanently delete all your tasks, delegations, and settings from the local database.")
 
 def show_settings():
     st.header("⚙️ Application Settings")

@@ -36,11 +36,12 @@ The application follows a modular architecture with clear separation of concerns
 - **Features**: Urgency scoring algorithm, priority weighting, task categorization
 - **Scoring System**: Combines due date urgency (40%), priority (40%), and category importance (10%)
 
-### 3. Data Handling (`data_handler.py`)
-- **Purpose**: Manages data persistence and retrieval
-- **Storage**: JSON files in `/data` directory
-- **Files**: Separate files for tasks, delegations, and settings
-- **Versioning**: Includes data versioning and timestamp tracking
+### 3. Data Handling (`data_handler.py` + `database.py`)
+- **Purpose**: Manages data persistence and retrieval with SQLite database
+- **Storage**: Local SQLite database (`data/tasks.db`) with automatic migration from JSON
+- **Tables**: Separate tables for tasks, delegations, and settings with proper relationships
+- **Migration**: Automatic migration from existing JSON files to database on first run
+- **Backup**: Database backup functionality with versioned backup files
 
 ### 4. Visualization (`visualization.py`)
 - **Purpose**: Creates interactive charts and timeline visualizations
@@ -81,8 +82,10 @@ The application follows a modular architecture with clear separation of concerns
 - **Environment Variables**: Backend-specific API keys and configuration
 
 ### Data Dependencies
-- **JSON Files**: Local file system for data persistence
-- **Directory Structure**: `/data` folder for organized file storage
+- **SQLite Database**: Local SQLite database for persistent data storage
+- **SQLAlchemy ORM**: Object-relational mapping for database operations
+- **Migration System**: Automatic migration from legacy JSON files to database
+- **Directory Structure**: `/data` folder for database file and backups
 
 ## Deployment Strategy
 
