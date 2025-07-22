@@ -124,10 +124,58 @@ def show_dashboard():
             with col3:
                 st.write(task.get('status', 'Not Started'))
     else:
-        st.info("No tasks yet. Use the AI Action Item Extraction to get started!")
+        st.info("👋 **Getting Started**: Go to the '🤖 AI Extraction' tab to extract tasks from your meeting notes!")
+        
+        # Add sample data button for demonstration
+        if st.button("📋 Add Sample Tasks (for demonstration)"):
+            sample_tasks = [
+                {
+                    'title': 'Review Q4 Architecture Plans',
+                    'description': 'Review and provide feedback on the Q4 system architecture plans',
+                    'priority': 'High',
+                    'status': 'In Progress',
+                    'category': 'Strategic',
+                    'due_date': (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d'),
+                    'estimated_hours': 4.0,
+                    'created_date': datetime.now().strftime('%Y-%m-%d'),
+                    'created_by_ai': False
+                },
+                {
+                    'title': 'Team Performance Reviews',
+                    'description': 'Complete quarterly performance reviews for direct reports',
+                    'priority': 'Critical',
+                    'status': 'Not Started',
+                    'category': 'Administrative',
+                    'due_date': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
+                    'estimated_hours': 8.0,
+                    'created_date': datetime.now().strftime('%Y-%m-%d'),
+                    'created_by_ai': False
+                }
+            ]
+            
+            for task in sample_tasks:
+                task_id = st.session_state.data_handler.save_single_task(task)
+                task['id'] = task_id
+                st.session_state.tasks.append(task)
+            
+            st.success("Sample tasks added! Now explore other tabs to see charts and analytics.")
+            st.rerun()
 
 def show_ai_extraction():
     st.header("🤖 AI Action Item Extraction")
+    
+    # Help panel
+    with st.expander("ℹ️ How to use this feature", expanded=True):
+        st.markdown("""
+        **Step 1:** Paste your meeting notes or text below  
+        **Step 2:** Click "🚀 Extract Action Items" to analyze  
+        **Step 3:** Review and edit the extracted tasks  
+        **Step 4:** Click "✅ Add All Tasks" to save to your system  
+        **Step 5:** Go to other tabs to see charts and analytics  
+        
+        The AI automatically detects tasks, priorities, categories, due dates, and delegation suggestions.
+        """)
+    
     st.markdown("Paste your meeting notes or text to automatically extract action items, set priorities, and create tasks.")
     
     # Input methods
