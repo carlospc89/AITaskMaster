@@ -8,8 +8,8 @@ from typing import List, Dict, Any, Optional
 class VisualizationManager:
     def __init__(self):
         self.color_map = {
-            'Critical': '#FF6B6B',
-            'High': '#FF8E53',
+            'Critical': '#FF0000',
+            'High': '#FF6B6B',
             'Medium': '#4ECDC4',
             'Low': '#45B7D1'
         }

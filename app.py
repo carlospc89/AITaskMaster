@@ -484,15 +484,34 @@ def render_analytics():
     
     with col1:
         st.subheader("📊 Status Distribution")
-        status_fig = viz_manager.create_status_distribution(st.session_state.tasks)
-        if status_fig:
-            st.plotly_chart(status_fig, use_container_width=True)
+        # Create status distribution
+        status_counts = {}
+        for task in st.session_state.tasks:
+            status = task.get('status', 'Not Started')
+            status_counts[status] = status_counts.get(status, 0) + 1
+        
+        if status_counts:
+            fig = px.pie(values=list(status_counts.values()), 
+                       names=list(status_counts.keys()),
+                       title="Status Distribution",
+                       color_discrete_map=viz_manager.status_colors)
+            st.plotly_chart(fig, use_container_width=True)
     
     with col2:
         st.subheader("🎯 Priority Breakdown")
-        priority_fig = viz_manager.create_priority_distribution(st.session_state.tasks)
-        if priority_fig:
-            st.plotly_chart(priority_fig, use_container_width=True)
+        # Create priority distribution
+        priority_counts = {}
+        for task in st.session_state.tasks:
+            priority = task.get('priority', 'Medium')
+            priority_counts[priority] = priority_counts.get(priority, 0) + 1
+        
+        if priority_counts:
+            fig = px.bar(x=list(priority_counts.keys()), 
+                       y=list(priority_counts.values()),
+                       title="Priority Distribution",
+                       color=list(priority_counts.keys()),
+                       color_discrete_map=viz_manager.color_map)
+            st.plotly_chart(fig, use_container_width=True)
     
     # Timeline view
     st.subheader("📅 Timeline View")
@@ -504,9 +523,20 @@ def render_analytics():
     
     # Category analysis
     st.subheader("📂 Category Analysis")
-    category_fig = viz_manager.create_category_analysis(st.session_state.tasks)
-    if category_fig:
-        st.plotly_chart(category_fig, use_container_width=True)
+    # Create category distribution
+    category_counts = {}
+    for task in st.session_state.tasks:
+        category = task.get('category', 'Other')
+        category_counts[category] = category_counts.get(category, 0) + 1
+    
+    if category_counts:
+        fig = px.bar(x=list(category_counts.keys()), 
+                   y=list(category_counts.values()),
+                   title="Tasks by Category")
+        fig.update_layout(xaxis_title="Category", yaxis_title="Number of Tasks")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No category data available.")
 
 def render_settings():
     """Render settings tab"""
