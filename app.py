@@ -209,9 +209,8 @@ def render_extract_tasks():
                 # Extract items
                 extracted = ai_processor.extract_action_items(
                     text_input,
-                    categories=st.session_state.settings['categories'],
-                    delegates=st.session_state.settings['delegates'],
-                    max_items=max_items
+                    auto_categorize=categorize,
+                    auto_delegate=auto_delegate
                 )
                 
                 if extracted:
