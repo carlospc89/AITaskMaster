@@ -162,7 +162,7 @@ def render_extract_tasks():
     
     with col2:
         if backend == 'ollama':
-            model = st.text_input("Ollama Model", value=st.session_state.settings.get('ollama_model', 'mistral:latest'))
+            model = st.text_input("Ollama Model", value=st.session_state.settings.get('ollama_model', 'mistral:latest'), key="extract_ollama_model")
             if model != st.session_state.settings.get('ollama_model'):
                 st.session_state.settings['ollama_model'] = model
                 save_all_data()
@@ -552,7 +552,7 @@ def render_settings():
                               index=['ollama', 'perplexity', 'openai'].index(st.session_state.settings['ai_backend']))
         
         if backend == 'ollama':
-            model = st.text_input("Ollama Model", value=st.session_state.settings.get('ollama_model', 'mistral:latest'))
+            model = st.text_input("Ollama Model", value=st.session_state.settings.get('ollama_model', 'mistral:latest'), key="settings_ollama_model")
             st.session_state.settings['ollama_model'] = model
         
         st.session_state.settings['ai_backend'] = backend
