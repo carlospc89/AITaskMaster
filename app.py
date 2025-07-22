@@ -150,35 +150,25 @@ def render_extract_tasks():
     
     st.header("🤖 AI Task Extraction")
     
-    # AI Backend selection
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        backend = st.selectbox("AI Backend", 
-                              options=['ollama', 'perplexity', 'openai'], 
-                              index=['ollama', 'perplexity', 'openai'].index(st.session_state.settings['ai_backend']))
-        if backend != st.session_state.settings['ai_backend']:
-            st.session_state.settings['ai_backend'] = backend
-            save_all_data()
-    
-    with col2:
-        if backend == 'ollama':
-            model = st.text_input("Ollama Model", value=st.session_state.settings.get('ollama_model', 'mistral:latest'), key="extract_ollama_model")
-            if model != st.session_state.settings.get('ollama_model'):
-                st.session_state.settings['ollama_model'] = model
-                save_all_data()
-    
-    # Initialize AI processor
+    # Initialize AI processor with current settings
+    backend = st.session_state.settings['ai_backend']
     ai_processor = AIProcessor(backend=backend, settings=st.session_state.settings)
     
     # Status indicator
-    if ai_processor.api_available:
-        st.success(f"✅ {backend.title()} AI is available")
-    else:
-        st.warning(f"⚠️ {backend.title()} AI is not available. Using fallback extraction.")
-        if backend == 'ollama':
-            st.info("Make sure Ollama is running locally with the specified model installed.")
-        elif backend in ['perplexity', 'openai']:
-            st.info(f"Please provide the {backend.upper()}_API_KEY environment variable.")
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        if ai_processor.api_available:
+            st.success(f"✅ Using {backend.title()} AI backend")
+        else:
+            st.warning(f"⚠️ {backend.title()} AI not available. Using fallback extraction.")
+            if backend == 'ollama':
+                st.info("Make sure Ollama is running locally with the specified model installed.")
+            elif backend in ['perplexity', 'openai']:
+                st.info(f"Please provide the {backend.upper()}_API_KEY environment variable.")
+    with col2:
+        if st.button("⚙️ Configure AI", help="Go to settings to change AI backend"):
+            st.session_state.active_tab = "settings"
+            st.rerun()
     
     # Text input
     st.subheader("📄 Input Text")
