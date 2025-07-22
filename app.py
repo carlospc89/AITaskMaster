@@ -115,7 +115,7 @@ def render_dashboard():
                 fig = px.pie(values=list(status_counts.values()), 
                            names=list(status_counts.keys()),
                            title="Task Status Distribution")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="dashboard_status_pie")
         
         with col2:
             priority_counts = {}
@@ -129,7 +129,7 @@ def render_dashboard():
                            title="Priority Distribution",
                            color=list(priority_counts.keys()),
                            color_discrete_map={'Critical': '#FF0000', 'High': '#FF6B6B', 'Medium': '#4ECDC4', 'Low': '#45B7D1'})
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="dashboard_priority_bar")
     else:
         st.info("No tasks yet. Use the 'Extract Tasks' or 'Add Task' tabs to get started!")
         
@@ -495,7 +495,7 @@ def render_analytics():
                        names=list(status_counts.keys()),
                        title="Status Distribution",
                        color_discrete_map=viz_manager.status_colors)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="status_pie_chart")
     
     with col2:
         st.subheader("🎯 Priority Breakdown")
@@ -511,13 +511,13 @@ def render_analytics():
                        title="Priority Distribution",
                        color=list(priority_counts.keys()),
                        color_discrete_map=viz_manager.color_map)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="priority_bar_chart")
     
     # Timeline view
     st.subheader("📅 Timeline View")
     timeline_fig = viz_manager.create_gantt_chart(st.session_state.tasks)
     if timeline_fig:
-        st.plotly_chart(timeline_fig, use_container_width=True)
+        st.plotly_chart(timeline_fig, use_container_width=True, key="gantt_timeline_chart")
     else:
         st.info("Add due dates to tasks to see the timeline view.")
     
@@ -534,7 +534,7 @@ def render_analytics():
                    y=list(category_counts.values()),
                    title="Tasks by Category")
         fig.update_layout(xaxis_title="Category", yaxis_title="Number of Tasks")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="category_bar_chart")
     else:
         st.info("No category data available.")
 
