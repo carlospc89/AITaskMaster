@@ -104,11 +104,19 @@ The application follows a modular architecture with clear separation of concerns
 
 ### Key Architectural Decisions
 
-1. **File-based Storage**: Chosen for simplicity and single-user focus, with easy migration path to databases
+1. **Database Storage**: Migrated to SQLite for persistent data storage with automatic migration from JSON
 2. **Modular Design**: Each component is independent, allowing for easy testing and maintenance
 3. **Flexible AI Integration**: Multi-backend AI support (Perplexity, Ollama, OpenAI) provides choice between cloud and local processing
 4. **Local AI Support**: Ollama integration enables privacy-focused, offline AI processing without external API dependencies
 5. **Fallback Mechanisms**: Application remains functional even when AI services are unavailable
 6. **Session State Management**: Streamlit's session state provides seamless user experience across page navigation
+7. **AI Title Enhancement**: Improved prompts for generating meaningful, actionable task titles with clear action verbs
+
+## Recent Bug Fixes (July 22, 2025)
+- Fixed database persistence issues where tasks weren't appearing in other tabs
+- Eliminated page refresh on form field changes in AI extraction interface
+- Enhanced AI prompts to generate more meaningful task titles with action verbs
+- Added proper session state management for data consistency across tabs
+- Improved error handling and user feedback for task addition process
 
 The architecture prioritizes ease of use, modularity, and extensibility while maintaining a focus on tech leadership use cases.

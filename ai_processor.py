@@ -315,13 +315,27 @@ Return only the JSON array of action items."""
         
         categories_str = "/".join(categories)
         
-        system_prompt = f"""You are a task analyst. Analyze the given action item and return structured data.
+        system_prompt = f"""You are a task analyst for a tech leadership team. Analyze the given action item and return structured data.
 
 ANALYZE THE TASK FOR:
-1. Priority (Critical/High/Medium/Low)
-2. Category ({categories_str})  
-3. Time estimate in hours (0.5 to 40.0)
-4. Due date (YYYY-MM-DD format, estimate if not specified)
+1. Clear, actionable title (use active verbs like "Review", "Complete", "Implement", "Schedule", "Update")
+2. Priority (Critical/High/Medium/Low)
+3. Category ({categories_str})  
+4. Time estimate in hours (0.5 to 40.0)
+5. Due date (YYYY-MM-DD format, estimate if not specified)
+
+TITLE GUIDELINES:
+- Start with action verbs (Review, Complete, Implement, Schedule, Update, Analyze, Plan, etc.)
+- Be specific about the deliverable or outcome
+- Keep under 80 characters
+- Make it clear what needs to be done
+
+Examples of good titles:
+- "Review Q4 architecture proposal and provide feedback"
+- "Complete performance reviews for engineering team"
+- "Schedule stakeholder meeting for project kickoff"
+- "Update security documentation after audit"
+- "Implement new deployment pipeline for CI/CD"
 
 RETURN ONLY THIS JSON:
 {{

@@ -30,9 +30,11 @@ if 'ai_processor' not in st.session_state:
     backend = saved_settings.get('ai_backend', 'perplexity')
     st.session_state.ai_processor = AIProcessor(backend=backend, settings=saved_settings)
 
-# Load existing data
-st.session_state.tasks = st.session_state.data_handler.load_tasks()
-st.session_state.delegations = st.session_state.data_handler.load_delegations()
+# Load existing data only if not already loaded
+if not hasattr(st.session_state, 'data_loaded') or not st.session_state.data_loaded:
+    st.session_state.tasks = st.session_state.data_handler.load_tasks()
+    st.session_state.delegations = st.session_state.data_handler.load_delegations()
+    st.session_state.data_loaded = True
 
 def main():
     st.set_page_config(
@@ -159,7 +161,9 @@ def show_dashboard():
                 st.session_state.tasks.append(task)
             
             st.success("Sample tasks added! Now explore other tabs to see charts and analytics.")
-            st.rerun()
+            # Refresh data in session state
+            st.session_state.tasks = st.session_state.data_handler.load_tasks()
+            st.session_state.delegations = st.session_state.data_handler.load_delegations()
 
 def show_ai_extraction():
     st.header("🤖 AI Action Item Extraction")
@@ -236,16 +240,28 @@ def show_ai_extraction():
                                     item['category'] = st.selectbox(f"Category {i+1}", 
                                         available_categories,
                                         index=category_index,
-                                        key=f"cat_{i}")
+                                        key=f"cat_{i}",
+                                        on_change=None)
                                 
                                 with col2:
                                     item['priority'] = st.selectbox(f"Priority {i+1}", 
                                         ["Critical", "High", "Medium", "Low"],
                                         index=["Critical", "High", "Medium", "Low"].index(item.get('priority', 'Medium')),
                                         key=f"priority_{i}")
-                                    item['due_date'] = st.date_input(f"Due Date {i+1}", 
-                                        value=datetime.strptime(item['due_date'], '%Y-%m-%d').date() if item.get('due_date') else None,
+                                    # Handle due date conversion properly
+                                    due_date_value = None
+                                    if item.get('due_date'):
+                                        try:
+                                            due_date_value = datetime.strptime(item['due_date'], '%Y-%m-%d').date()
+                                        except:
+                                            due_date_value = (datetime.now() + timedelta(days=7)).date()
+                                    else:
+                                        due_date_value = (datetime.now() + timedelta(days=7)).date()
+                                    
+                                    new_due_date = st.date_input(f"Due Date {i+1}", 
+                                        value=due_date_value,
                                         key=f"due_{i}")
+                                    item['due_date'] = new_due_date.strftime('%Y-%m-%d') if new_due_date else None
                                     item['estimated_hours'] = st.number_input(f"Estimated Hours {i+1}", 
                                         min_value=0.5, max_value=40.0, step=0.5, 
                                         value=float(item.get('estimated_hours', 1.0)), key=f"hours_{i}")
@@ -328,8 +344,12 @@ def show_ai_extraction():
                                     if added_count > 0:
                                         st.success(f"✅ Successfully added {added_count} tasks! ({error_count} errors)")
                                         st.balloons()
-                                        time.sleep(2)  # Give user time to see the success
-                                        st.rerun()
+                                        
+                                        # Force refresh the session state from database
+                                        st.session_state.tasks = st.session_state.data_handler.load_tasks()
+                                        st.session_state.delegations = st.session_state.data_handler.load_delegations()
+                                        
+                                        st.info("Tasks have been saved! Go to the 📋 Tasks tab or 📊 Dashboard to see them.")
                                     else:
                                         st.error("❌ Failed to add any tasks. Please check the error messages above.")
                         
@@ -841,7 +861,6 @@ def show_data_management():
             st.session_state.tasks = st.session_state.data_handler.load_tasks()
             st.session_state.delegations = st.session_state.data_handler.load_delegations()
             st.success("Data reloaded successfully!")
-            st.rerun()
     
     # Export data
     st.subheader("📤 Export Data")
