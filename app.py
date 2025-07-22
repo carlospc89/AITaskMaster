@@ -18,11 +18,29 @@ def main():
         st.header("Dashboard")
         st.write(f"Total tasks: {len(st.session_state.tasks)}")
         
+        # Debug information
+        st.write(f"Session state contents: {st.session_state}")
+        
         if st.session_state.tasks:
+            st.success("Tasks found!")
             for i, task in enumerate(st.session_state.tasks):
                 st.write(f"{i+1}. {task['title']} - {task['status']}")
         else:
-            st.write("No tasks yet")
+            st.info("No tasks yet. Go to Add Task tab to create one.")
+            
+        # Add test task button for debugging
+        if st.button("Add Test Task"):
+            test_task = {
+                'id': len(st.session_state.tasks) + 1,
+                'title': 'Test Task',
+                'description': 'This is a test task',
+                'priority': 'Medium',
+                'status': 'Not Started',
+                'created_date': datetime.now().strftime('%Y-%m-%d')
+            }
+            st.session_state.tasks.append(test_task)
+            st.success("Test task added!")
+            st.rerun()
     
     with tab2:
         st.header("Add Task")
@@ -44,6 +62,8 @@ def main():
                     }
                     st.session_state.tasks.append(new_task)
                     st.success(f"Task '{title}' added successfully!")
+                    st.write(f"Current tasks count: {len(st.session_state.tasks)}")
+                    st.write(f"Latest task: {new_task}")
                 else:
                     st.error("Please enter a task title")
 
