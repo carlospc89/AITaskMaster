@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
+import time
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
@@ -224,53 +225,65 @@ def show_ai_extraction():
                         
                         with col1:
                             if st.button("✅ Add All Tasks"):
-                                added_count = 0
-                                for item in extracted_items:
-                                    try:
-                                        # Convert to task format
-                                        task = {
-                                            'title': item['title'],
-                                            'description': item.get('description', ''),
-                                            'priority': item.get('priority', 'Medium'),
-                                            'status': 'Not Started',
-                                            'category': item.get('category', 'Other'),
-                                            'due_date': str(item['due_date']) if item.get('due_date') else None,
-                                            'estimated_hours': item.get('estimated_hours', 1.0),
-                                            'created_date': datetime.now().strftime('%Y-%m-%d'),
-                                            'created_by_ai': True
-                                        }
-                                        
-                                        # Save task to database and get ID
-                                        task_id = st.session_state.data_handler.save_single_task(task)
-                                        task['id'] = task_id
-                                        st.session_state.tasks.append(task)
-                                        added_count += 1
-                                        
-                                        # Create delegation if requested
-                                        if item.get('create_delegation'):
-                                            delegation = {
-                                                'task_id': task_id,
-                                                'task_title': item['title'],
-                                                'delegate_to': item.get('delegate_to', ''),
-                                                'status': 'Assigned',
-                                                'priority': item.get('priority', 'Medium'),
-                                                'due_date': str(item['due_date']) if item.get('due_date') else None,
-                                                'created_date': datetime.now().strftime('%Y-%m-%d'),
-                                                'notes': f"Auto-created from AI extraction: {item.get('description', '')}"
-                                            }
-                                            delegation_id = st.session_state.data_handler.save_single_delegation(delegation)
-                                            delegation['id'] = delegation_id
-                                            st.session_state.delegations.append(delegation)
+                                with st.spinner("Adding tasks to database..."):
+                                    added_count = 0
+                                    error_count = 0
                                     
-                                    except Exception as e:
-                                        st.error(f"Error adding task '{item.get('title', 'Unknown')}': {str(e)}")
-                                        continue
-                                
-                                if added_count > 0:
-                                    st.success(f"✅ Successfully added {added_count} tasks!")
-                                    st.rerun()
-                                else:
-                                    st.error("❌ Failed to add any tasks. Please check the error messages above.")
+                                    st.write(f"Processing {len(extracted_items)} items...")
+                                    
+                                    for i, item in enumerate(extracted_items):
+                                        try:
+                                            st.write(f"Adding task {i+1}: {item.get('title', 'Unknown')}")
+                                            
+                                            # Convert to task format
+                                            task = {
+                                                'title': item['title'],
+                                                'description': item.get('description', ''),
+                                                'priority': item.get('priority', 'Medium'),
+                                                'status': 'Not Started',
+                                                'category': item.get('category', 'Other'),
+                                                'due_date': str(item['due_date']) if item.get('due_date') else None,
+                                                'estimated_hours': item.get('estimated_hours', 1.0),
+                                                'created_date': datetime.now().strftime('%Y-%m-%d'),
+                                                'created_by_ai': True
+                                            }
+                                            
+                                            # Save task to database and get ID
+                                            task_id = st.session_state.data_handler.save_single_task(task)
+                                            task['id'] = task_id
+                                            st.session_state.tasks.append(task)
+                                            added_count += 1
+                                            st.write(f"✅ Task saved with ID: {task_id}")
+                                            
+                                            # Create delegation if requested
+                                            if item.get('create_delegation'):
+                                                delegation = {
+                                                    'task_id': task_id,
+                                                    'task_title': item['title'],
+                                                    'delegate_to': item.get('delegate_to', ''),
+                                                    'status': 'Assigned',
+                                                    'priority': item.get('priority', 'Medium'),
+                                                    'due_date': str(item['due_date']) if item.get('due_date') else None,
+                                                    'created_date': datetime.now().strftime('%Y-%m-%d'),
+                                                    'notes': f"Auto-created from AI extraction: {item.get('description', '')}"
+                                                }
+                                                delegation_id = st.session_state.data_handler.save_single_delegation(delegation)
+                                                delegation['id'] = delegation_id
+                                                st.session_state.delegations.append(delegation)
+                                                st.write(f"✅ Delegation created with ID: {delegation_id}")
+                                        
+                                        except Exception as e:
+                                            error_count += 1
+                                            st.error(f"❌ Error adding task '{item.get('title', 'Unknown')}': {str(e)}")
+                                            continue
+                                    
+                                    if added_count > 0:
+                                        st.success(f"✅ Successfully added {added_count} tasks! ({error_count} errors)")
+                                        st.balloons()
+                                        time.sleep(2)  # Give user time to see the success
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Failed to add any tasks. Please check the error messages above.")
                         
                         with col2:
                             if st.button("📅 Add to Calendar"):
@@ -758,6 +771,30 @@ def show_timeline_analytics():
 def show_data_management():
     st.header("💾 Data Management")
     
+    # Data status
+    st.subheader("📊 Current Data Status")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Tasks in Memory", len(st.session_state.tasks))
+    with col2:
+        st.metric("Delegations in Memory", len(st.session_state.delegations))
+    with col3:
+        # Check database status
+        try:
+            db_tasks = st.session_state.data_handler.load_tasks()
+            st.metric("Tasks in Database", len(db_tasks))
+        except Exception as e:
+            st.metric("Database Status", f"Error: {str(e)}")
+    
+    # Sync button
+    if st.button("🔄 Reload Data from Database"):
+        with st.spinner("Reloading..."):
+            st.session_state.tasks = st.session_state.data_handler.load_tasks()
+            st.session_state.delegations = st.session_state.data_handler.load_delegations()
+            st.success("Data reloaded successfully!")
+            st.rerun()
+    
     # Export data
     st.subheader("📤 Export Data")
     col1, col2 = st.columns(2)
@@ -765,28 +802,34 @@ def show_data_management():
     with col1:
         if st.button("Export Tasks (CSV)"):
             if st.session_state.tasks:
-                df = pd.DataFrame(st.session_state.tasks)
-                csv_data = df.to_csv(index=False)
-                st.download_button(
-                    label="Download Tasks CSV",
-                    data=csv_data,
-                    file_name=f"tasks_export_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                    mime="text/csv"
-                )
+                with st.spinner("Preparing export..."):
+                    df = pd.DataFrame(st.session_state.tasks)
+                    csv_data = df.to_csv(index=False)
+                    st.success(f"✅ Ready to download {len(st.session_state.tasks)} tasks!")
+                    st.download_button(
+                        label="📥 Download Tasks CSV",
+                        data=csv_data,
+                        file_name=f"tasks_export_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv",
+                        type="primary"
+                    )
             else:
                 st.warning("No tasks to export.")
     
     with col2:
         if st.button("Export Delegations (CSV)"):
             if st.session_state.delegations:
-                df = pd.DataFrame(st.session_state.delegations)
-                csv_data = df.to_csv(index=False)
-                st.download_button(
-                    label="Download Delegations CSV",
-                    data=csv_data,
-                    file_name=f"delegations_export_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                    mime="text/csv"
-                )
+                with st.spinner("Preparing export..."):
+                    df = pd.DataFrame(st.session_state.delegations)
+                    csv_data = df.to_csv(index=False)
+                    st.success(f"✅ Ready to download {len(st.session_state.delegations)} delegations!")
+                    st.download_button(
+                        label="📥 Download Delegations CSV",
+                        data=csv_data,
+                        file_name=f"delegations_export_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv",
+                        type="primary"
+                    )
             else:
                 st.warning("No delegations to export.")
     
