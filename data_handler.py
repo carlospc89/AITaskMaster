@@ -151,10 +151,15 @@ class DataHandler:
     def get_default_settings(self) -> Dict[str, Any]:
         """Get default application settings."""
         return {
+            'ai_backend': 'perplexity',
             'auto_save': True,
             'ai_suggestions_enabled': True,
             'default_task_duration': 1.0,
             'working_hours_per_day': 8,
+            'extraction_temperature': 0.1,
+            'max_tokens': 1000,
+            'categories': ['Strategic', 'Technical', 'Meeting', 'Review', 'Administrative', 'Other'],
+            'delegates': ['Developer', 'Designer', 'QA Engineer', 'Marketing Team', 'Technical Writer', 'Project Manager'],
             'notification_preferences': {
                 'overdue_tasks': True,
                 'approaching_deadlines': True,

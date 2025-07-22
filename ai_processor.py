@@ -190,13 +190,19 @@ RULES:
 2. Look for assignments or responsibilities 
 3. Look for deadlines or timeframes
 4. Ignore general discussion or information
+5. AVOID DUPLICATES - each action item should be unique and distinct
+6. Combine similar tasks into one clear action item
 
-TASK: Read the text and list each action item you find. Be specific and actionable.
+TASK: Read the text and list each UNIQUE action item you find. Be specific and actionable.
 
 FORMAT: Return only a JSON array like this:
 ["Action item 1", "Action item 2", "Action item 3"]
 
-Keep it simple - just the action items as strings in a JSON array."""
+IMPORTANT: 
+- Each item must be different from the others
+- If multiple people need to do the same thing, combine into one task
+- Focus on distinct outcomes, not repeated activities
+- Keep it simple - just the unique action items as strings in a JSON array."""
 
         user_prompt = f"""Extract action items from this text:
 
@@ -244,28 +250,88 @@ Return only the JSON array of action items."""
                     'suggested_delegate': None
                 })
         
-        return enhanced_items
+        # Step 3: Remove duplicates and similar items
+        deduplicated_items = self._remove_duplicate_items(enhanced_items)
+        
+        return deduplicated_items
+    
+    def _remove_duplicate_items(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove duplicate and very similar action items."""
+        if len(items) <= 1:
+            return items
+        
+        unique_items = []
+        seen_titles = set()
+        
+        for item in items:
+            title_lower = item.get('title', '').lower().strip()
+            desc_lower = item.get('description', '').lower().strip()
+            
+            # Check for exact title matches
+            if title_lower in seen_titles:
+                continue
+            
+            # Check for similar items (high similarity in title or description)
+            is_duplicate = False
+            for existing_item in unique_items:
+                existing_title = existing_item.get('title', '').lower().strip()
+                existing_desc = existing_item.get('description', '').lower().strip()
+                
+                # Simple similarity check
+                if (self._similarity_score(title_lower, existing_title) > 0.8 or 
+                    self._similarity_score(desc_lower, existing_desc) > 0.8):
+                    is_duplicate = True
+                    break
+            
+            if not is_duplicate:
+                unique_items.append(item)
+                seen_titles.add(title_lower)
+        
+        return unique_items
+    
+    def _similarity_score(self, str1: str, str2: str) -> float:
+        """Calculate similarity score between two strings (0.0 to 1.0)."""
+        if not str1 or not str2:
+            return 0.0
+        
+        # Simple word-based similarity
+        words1 = set(str1.split())
+        words2 = set(str2.split())
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        intersection = words1.intersection(words2)
+        union = words1.union(words2)
+        
+        return len(intersection) / len(union) if union else 0.0
     
     def _enhance_action_item(self, raw_item: str, item_number: int, auto_categorize: bool, auto_delegate: bool) -> Dict[str, Any]:
         """Enhance a raw action item with metadata using focused prompts."""
         
-        system_prompt = """You are a task analyst. Analyze the given action item and return structured data.
+        # Get available categories and delegates from settings
+        categories = self.settings.get('categories', ['Strategic', 'Technical', 'Meeting', 'Review', 'Administrative', 'Other'])
+        delegates = self.settings.get('delegates', ['Developer', 'Designer', 'QA Engineer', 'Marketing Team', 'Technical Writer', 'Project Manager'])
+        
+        categories_str = "/".join(categories)
+        
+        system_prompt = f"""You are a task analyst. Analyze the given action item and return structured data.
 
 ANALYZE THE TASK FOR:
 1. Priority (Critical/High/Medium/Low)
-2. Category (Strategic/Technical/Meeting/Review/Administrative/Other)  
+2. Category ({categories_str})  
 3. Time estimate in hours (0.5 to 40.0)
 4. Due date (YYYY-MM-DD format, estimate if not specified)
 
 RETURN ONLY THIS JSON:
-{
+{{
   "title": "Short clear title (max 50 chars)",
   "description": "What needs to be done",
   "priority": "Medium", 
   "category": "Other",
   "estimated_hours": 2.0,
   "due_date": "2025-01-30"
-}"""
+}}"""
 
         user_prompt = f"""Analyze this action item:
 
@@ -296,7 +362,7 @@ Return only the JSON object."""
             # Add delegation suggestion if enabled
             enhanced_item['suggested_delegate'] = None
             if auto_delegate:
-                enhanced_item['suggested_delegate'] = self._suggest_delegate(raw_item)
+                enhanced_item['suggested_delegate'] = self._suggest_delegate(raw_item, delegates)
             
             return enhanced_item
             
@@ -365,21 +431,25 @@ Return JSON with action_items array."""
         }
         return defaults.get(field, '')
     
-    def _suggest_delegate(self, text: str) -> str:
-        """Simple delegation suggestion based on text content."""
+    def _suggest_delegate(self, text: str, available_delegates: List[str]) -> str:
+        """Simple delegation suggestion based on text content and available delegates."""
         text_lower = text.lower()
         
-        # Look for role indicators
-        if any(word in text_lower for word in ['develop', 'code', 'implement', 'build']):
-            return 'Developer'
-        elif any(word in text_lower for word in ['design', 'ui', 'ux', 'mockup']):
-            return 'Designer'  
-        elif any(word in text_lower for word in ['test', 'qa', 'verify', 'validate']):
-            return 'QA Engineer'
-        elif any(word in text_lower for word in ['market', 'customer', 'user research']):
-            return 'Marketing Team'
-        elif any(word in text_lower for word in ['document', 'write', 'spec']):
-            return 'Technical Writer'
+        # Create mapping of keywords to delegate types
+        delegate_keywords = {
+            'Developer': ['develop', 'code', 'implement', 'build', 'program', 'software'],
+            'Designer': ['design', 'ui', 'ux', 'mockup', 'visual', 'interface'],
+            'QA Engineer': ['test', 'qa', 'verify', 'validate', 'quality', 'bug'],
+            'Marketing Team': ['market', 'customer', 'user research', 'promotion', 'campaign'],
+            'Technical Writer': ['document', 'write', 'spec', 'documentation', 'manual'],
+            'Project Manager': ['coordinate', 'manage', 'schedule', 'plan', 'organize']
+        }
+        
+        # Look for role indicators and match with available delegates
+        for delegate in available_delegates:
+            keywords = delegate_keywords.get(delegate, [])
+            if any(keyword in text_lower for keyword in keywords):
+                return delegate
         
         return None
     

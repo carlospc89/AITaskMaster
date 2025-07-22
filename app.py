@@ -175,9 +175,18 @@ def show_ai_extraction():
                                 with col1:
                                     item['title'] = st.text_input(f"Title {i+1}", item['title'], key=f"title_{i}")
                                     item['description'] = st.text_area(f"Description {i+1}", item.get('description', ''), key=f"desc_{i}")
+                                    # Get categories from settings
+                                    current_settings = st.session_state.data_handler.load_settings()
+                                    available_categories = current_settings.get('categories', ['Strategic', 'Technical', 'Meeting', 'Review', 'Administrative', 'Other'])
+                                    
+                                    try:
+                                        category_index = available_categories.index(item.get('category', 'Other'))
+                                    except ValueError:
+                                        category_index = 0 if available_categories else 0
+                                    
                                     item['category'] = st.selectbox(f"Category {i+1}", 
-                                        ["Strategic", "Technical", "Meeting", "Review", "Administrative", "Other"],
-                                        index=["Strategic", "Technical", "Meeting", "Review", "Administrative", "Other"].index(item.get('category', 'Other')),
+                                        available_categories,
+                                        index=category_index,
                                         key=f"cat_{i}")
                                 
                                 with col2:
@@ -197,7 +206,17 @@ def show_ai_extraction():
                                     st.info(f"💡 AI suggests delegating to: {item['suggested_delegate']}")
                                     if st.checkbox(f"Create delegation for {item['suggested_delegate']}", key=f"delegate_{i}"):
                                         item['create_delegation'] = True
-                                        item['delegate_to'] = st.text_input(f"Delegate to", item['suggested_delegate'], key=f"delegate_to_{i}")
+                                        available_delegates = current_settings.get('delegates', ['Developer', 'Designer', 'QA Engineer', 'Marketing Team', 'Technical Writer', 'Project Manager'])
+                                        
+                                        # Try to set default to suggested delegate
+                                        default_delegate = item.get('suggested_delegate', '')
+                                        if default_delegate not in available_delegates:
+                                            available_delegates.append(default_delegate)
+                                        
+                                        item['delegate_to'] = st.selectbox(f"Delegate to", 
+                                            available_delegates, 
+                                            index=available_delegates.index(default_delegate) if default_delegate in available_delegates else 0,
+                                            key=f"delegate_to_{i}")
                         
                         # Batch actions
                         st.subheader("🎯 Batch Actions")
@@ -205,41 +224,53 @@ def show_ai_extraction():
                         
                         with col1:
                             if st.button("✅ Add All Tasks"):
+                                added_count = 0
                                 for item in extracted_items:
-                                    # Convert to task format
-                                    task = {
-                                        'id': len(st.session_state.tasks) + 1,
-                                        'title': item['title'],
-                                        'description': item.get('description', ''),
-                                        'priority': item.get('priority', 'Medium'),
-                                        'status': 'Not Started',
-                                        'category': item.get('category', 'Other'),
-                                        'due_date': str(item['due_date']) if item.get('due_date') else None,
-                                        'estimated_hours': item.get('estimated_hours', 1.0),
-                                        'created_date': datetime.now().strftime('%Y-%m-%d'),
-                                        'created_by_ai': True
-                                    }
-                                    st.session_state.tasks.append(task)
-                                    
-                                    # Create delegation if requested
-                                    if item.get('create_delegation'):
-                                        delegation = {
-                                            'id': len(st.session_state.delegations) + 1,
-                                            'task_title': item['title'],
-                                            'delegate_to': item.get('delegate_to', ''),
-                                            'status': 'Assigned',
+                                    try:
+                                        # Convert to task format
+                                        task = {
+                                            'title': item['title'],
+                                            'description': item.get('description', ''),
+                                            'priority': item.get('priority', 'Medium'),
+                                            'status': 'Not Started',
+                                            'category': item.get('category', 'Other'),
                                             'due_date': str(item['due_date']) if item.get('due_date') else None,
+                                            'estimated_hours': item.get('estimated_hours', 1.0),
                                             'created_date': datetime.now().strftime('%Y-%m-%d'),
-                                            'notes': f"Auto-created from AI extraction: {item.get('description', '')}"
+                                            'created_by_ai': True
                                         }
-                                        st.session_state.delegations.append(delegation)
+                                        
+                                        # Save task to database and get ID
+                                        task_id = st.session_state.data_handler.save_single_task(task)
+                                        task['id'] = task_id
+                                        st.session_state.tasks.append(task)
+                                        added_count += 1
+                                        
+                                        # Create delegation if requested
+                                        if item.get('create_delegation'):
+                                            delegation = {
+                                                'task_id': task_id,
+                                                'task_title': item['title'],
+                                                'delegate_to': item.get('delegate_to', ''),
+                                                'status': 'Assigned',
+                                                'priority': item.get('priority', 'Medium'),
+                                                'due_date': str(item['due_date']) if item.get('due_date') else None,
+                                                'created_date': datetime.now().strftime('%Y-%m-%d'),
+                                                'notes': f"Auto-created from AI extraction: {item.get('description', '')}"
+                                            }
+                                            delegation_id = st.session_state.data_handler.save_single_delegation(delegation)
+                                            delegation['id'] = delegation_id
+                                            st.session_state.delegations.append(delegation)
+                                    
+                                    except Exception as e:
+                                        st.error(f"Error adding task '{item.get('title', 'Unknown')}': {str(e)}")
+                                        continue
                                 
-                                # Save data
-                                st.session_state.data_handler.save_tasks(st.session_state.tasks)
-                                st.session_state.data_handler.save_delegations(st.session_state.delegations)
-                                
-                                st.success("All tasks added successfully!")
-                                st.rerun()
+                                if added_count > 0:
+                                    st.success(f"✅ Successfully added {added_count} tasks!")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Failed to add any tasks. Please check the error messages above.")
                         
                         with col2:
                             if st.button("📅 Add to Calendar"):
@@ -940,7 +971,32 @@ def show_settings():
                 step=100,
                 help="Maximum tokens for AI responses"
             )
-        
+    
+    # Configuration section
+    st.subheader("🔧 Task Configuration")
+    
+    # Categories configuration
+    st.write("**Task Categories**")
+    current_categories = current_settings.get('categories', ['Strategic', 'Technical', 'Meeting', 'Review', 'Administrative', 'Other'])
+    categories_text = st.text_area(
+        "Categories (one per line):",
+        value='\n'.join(current_categories),
+        help="Enter task categories, one per line. These will be available when creating tasks and for AI classification."
+    )
+    categories = [cat.strip() for cat in categories_text.split('\n') if cat.strip()]
+    
+    # Delegates configuration
+    st.write("**Available Delegates**")
+    current_delegates = current_settings.get('delegates', ['Developer', 'Designer', 'QA Engineer', 'Marketing Team', 'Technical Writer', 'Project Manager'])
+    delegates_text = st.text_area(
+        "Delegates (one per line):",
+        value='\n'.join(current_delegates),
+        help="Enter available team members or roles for delegation, one per line."
+    )
+    delegates = [delegate.strip() for delegate in delegates_text.split('\n') if delegate.strip()]
+    
+    # Additional settings for Ollama backend
+    if selected_backend == "ollama":
         # Test Ollama connection
         if st.button("🔍 Test Ollama Connection", type="secondary"):
             with st.spinner("Testing connection..."):
@@ -1093,6 +1149,10 @@ def show_settings():
             import os
             os.environ["OLLAMA_BASE_URL"] = ollama_url
             os.environ["OLLAMA_MODEL"] = ollama_model
+        
+        # Add configuration settings
+        new_settings['categories'] = categories
+        new_settings['delegates'] = delegates
         
         # Save settings
         if st.session_state.data_handler.save_settings(new_settings):
