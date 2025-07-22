@@ -24,9 +24,10 @@ if 'task_manager' not in st.session_state:
 if 'viz_manager' not in st.session_state:
     st.session_state.viz_manager = VisualizationManager()
 if 'ai_processor' not in st.session_state:
-    # Initialize AI processor with saved backend preference
-    backend = st.session_state.data_handler.load_settings().get('ai_backend', 'perplexity')
-    st.session_state.ai_processor = AIProcessor(backend=backend)
+    # Initialize AI processor with saved backend preference and settings
+    saved_settings = st.session_state.data_handler.load_settings()
+    backend = saved_settings.get('ai_backend', 'perplexity')
+    st.session_state.ai_processor = AIProcessor(backend=backend, settings=saved_settings)
 
 # Load existing data
 st.session_state.tasks = st.session_state.data_handler.load_tasks()
@@ -908,8 +909,36 @@ def show_settings():
         with col2:
             ollama_model = st.text_input(
                 "Ollama Model:",
-                value=current_settings.get('ollama_model', 'llama3.1:8b'),
-                help="Model name (e.g., llama3.1:8b, mistral:latest, codellama:13b)"
+                value=current_settings.get('ollama_model', 'mistral:latest'),
+                help="Model name (e.g., mistral:latest, llama3.1:8b, codellama:13b, or your custom model)"
+            )
+        
+        # Special note for Mistral models
+        if "mistral" in ollama_model.lower():
+            st.info("💡 **Mistral Model Optimization**: This system includes special optimizations for Mistral models including step-by-step extraction, improved JSON parsing, and simplified prompts for better accuracy.")
+        
+        # Model performance settings
+        st.subheader("🎛️ Model Performance Settings")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            extraction_temperature = st.slider(
+                "AI Temperature:",
+                min_value=0.0,
+                max_value=1.0,
+                value=current_settings.get('extraction_temperature', 0.1),
+                step=0.1,
+                help="Lower values (0.1-0.3) for more consistent extraction, higher for creativity"
+            )
+        
+        with col2:
+            max_tokens = st.number_input(
+                "Max Tokens per Request:",
+                min_value=100,
+                max_value=4000,
+                value=current_settings.get('max_tokens', 1000),
+                step=100,
+                help="Maximum tokens for AI responses"
             )
         
         # Test Ollama connection
@@ -1057,6 +1086,8 @@ def show_settings():
         if selected_backend == "ollama":
             new_settings['ollama_base_url'] = ollama_url
             new_settings['ollama_model'] = ollama_model
+            new_settings['extraction_temperature'] = extraction_temperature
+            new_settings['max_tokens'] = max_tokens
             
             # Update environment variables
             import os
@@ -1067,10 +1098,12 @@ def show_settings():
         if st.session_state.data_handler.save_settings(new_settings):
             st.success("✅ Settings saved successfully!")
             
-            # Reinitialize AI processor if backend changed
+            # Reinitialize AI processor with new settings
+            st.session_state.ai_processor = AIProcessor(backend=selected_backend, settings=new_settings)
             if selected_backend != current_backend:
-                st.session_state.ai_processor = AIProcessor(backend=selected_backend)
                 st.info(f"🔄 AI backend switched to {backend_options[selected_backend]}")
+            else:
+                st.info("🔄 AI processor updated with new settings")
             
             st.rerun()
         else:

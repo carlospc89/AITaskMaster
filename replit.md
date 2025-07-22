@@ -29,7 +29,9 @@ The application follows a modular architecture with clear separation of concerns
 - **Features**: Auto-categorization, auto-delegation suggestions, priority assessment
 - **Backends**: Supports Perplexity Pro API, Ollama (local), and OpenAI
 - **Fallback**: Includes fallback extraction methods when AI is unavailable
-- **Default Model**: llama-3.1-sonar-small-128k-online (Perplexity) or llama3.1:8b (Ollama)
+- **Default Model**: llama-3.1-sonar-small-128k-online (Perplexity) or mistral:latest (Ollama)
+- **Mistral Optimization**: Special step-by-step extraction process for Mistral models with simplified prompts, improved JSON parsing, and enhanced error handling for better accuracy
+- **Performance Tuning**: Configurable temperature and max_tokens settings for optimized AI response quality
 
 ### 2. Task Management (`task_manager.py`)
 - **Purpose**: Handles core task management logic

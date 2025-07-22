@@ -6,15 +6,21 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
 class AIProcessor:
-    def __init__(self, backend="perplexity"):
+    def __init__(self, backend="perplexity", settings=None):
         """
         Initialize AI Processor with configurable backend.
         
         Args:
             backend (str): AI backend to use - "perplexity", "ollama", or "openai"
+            settings (dict): Configuration settings for AI processing
         """
         self.backend = backend
         self.api_available = False
+        self.settings = settings or {}
+        
+        # Configure performance settings
+        self.extraction_temperature = self.settings.get('extraction_temperature', 0.1)
+        self.max_tokens = self.settings.get('max_tokens', 1000)
         
         if backend == "perplexity":
             self.model = "llama-3.1-sonar-small-128k-online"
@@ -23,8 +29,8 @@ class AIProcessor:
             self.api_available = bool(self.api_key)
             
         elif backend == "ollama":
-            self.model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")  # Default to llama3.1:8b
-            self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+            self.model = self.settings.get('ollama_model') or os.getenv("OLLAMA_MODEL", "mistral:latest")
+            self.base_url = self.settings.get('ollama_base_url') or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
             self.api_key = None  # Ollama doesn't require API keys
             self._check_ollama_availability()
             
@@ -158,56 +164,224 @@ class AIProcessor:
         return "\n\n".join(prompt_parts) + "\n\nAssistant:"
     
     def extract_action_items(self, text: str, auto_categorize: bool = True, auto_delegate: bool = True) -> List[Dict[str, Any]]:
-        """Extract action items from meeting notes or text using AI."""
+        """Extract action items from meeting notes or text using AI, optimized for Mistral models."""
         if not self.api_available:
             return self._fallback_extraction(text)
         
         try:
-            system_prompt = """You are an expert project manager and AI assistant specialized in extracting action items from meeting notes and text. 
-
-Your task is to analyze the provided text and extract actionable items. Respond with a JSON object containing an "action_items" array. Each action item should have:
-- title: A clear, concise title for the action item
-- description: A brief description of what needs to be done
-- priority: One of [Critical, High, Medium, Low] based on urgency and importance
-- category: One of [Strategic, Technical, Meeting, Review, Administrative, Other]
-- due_date: Estimated due date in YYYY-MM-DD format (if mentioned or can be inferred)
-- estimated_hours: Estimated time to complete in hours (0.5 to 40.0)
-- suggested_delegate: If the task should be delegated, suggest who (if mentioned in text)
-
-Guidelines:
-- Only extract clear, actionable items (not general discussions)
-- Prioritize based on urgency indicators (ASAP, urgent, deadline, etc.)
-- Estimate realistic timeframes
-- Identify delegation opportunities for tasks that don't require direct leadership involvement
-- If no specific date is mentioned, estimate based on priority and context
-
-Example response format:
-{"action_items": [{"title": "...", "description": "...", "priority": "High", "category": "Technical", "due_date": "2025-01-25", "estimated_hours": 2.0, "suggested_delegate": null}]}"""
-
-            user_prompt = f"""Please analyze the following text and extract all action items:
-
-{text}
-
-Additional instructions:
-- Auto-categorize tasks: {auto_categorize}
-- Suggest delegations: {auto_delegate}
-
-Return the results as a JSON object with an "action_items" array."""
-
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
-            
-            response = self._make_api_request(messages, max_tokens=2000)
-            
-            content = response['choices'][0]['message']['content']
-            result = json.loads(content)
-            return result.get('action_items', [])
+            # Use different prompting strategy based on backend
+            if self.backend == "ollama" and "mistral" in self.model.lower():
+                return self._extract_with_mistral_optimization(text, auto_categorize, auto_delegate)
+            else:
+                return self._extract_with_standard_prompt(text, auto_categorize, auto_delegate)
             
         except Exception as e:
             print(f"AI processing error: {e}")
             return self._fallback_extraction(text)
+    
+    def _extract_with_mistral_optimization(self, text: str, auto_categorize: bool, auto_delegate: bool) -> List[Dict[str, Any]]:
+        """Optimized extraction for Mistral models with step-by-step approach."""
+        
+        # Step 1: Extract raw action items
+        system_prompt = """You are a task extraction expert. Your job is to find action items in text.
+
+RULES:
+1. Look for tasks that need to be done
+2. Look for assignments or responsibilities 
+3. Look for deadlines or timeframes
+4. Ignore general discussion or information
+
+TASK: Read the text and list each action item you find. Be specific and actionable.
+
+FORMAT: Return only a JSON array like this:
+["Action item 1", "Action item 2", "Action item 3"]
+
+Keep it simple - just the action items as strings in a JSON array."""
+
+        user_prompt = f"""Extract action items from this text:
+
+{text}
+
+Return only the JSON array of action items."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        try:
+            response = self._make_api_request(messages, max_tokens=self.max_tokens, temperature=self.extraction_temperature)
+            content = response['choices'][0]['message']['content'].strip()
+            
+            # Clean and parse the response
+            content = self._extract_json_from_content(content)
+            raw_items = json.loads(content)
+            
+            if not isinstance(raw_items, list):
+                return self._fallback_extraction(text)
+                
+        except Exception as e:
+            print(f"Step 1 failed: {e}")
+            return self._fallback_extraction(text)
+        
+        # Step 2: Enhance each item with metadata
+        enhanced_items = []
+        for i, item in enumerate(raw_items[:8]):  # Limit to 8 items for processing
+            try:
+                enhanced_item = self._enhance_action_item(item, i + 1, auto_categorize, auto_delegate)
+                if enhanced_item:
+                    enhanced_items.append(enhanced_item)
+            except Exception as e:
+                print(f"Enhancement failed for item {i}: {e}")
+                # Add basic item if enhancement fails
+                enhanced_items.append({
+                    'title': f"Task {i + 1}",
+                    'description': str(item)[:200],
+                    'priority': 'Medium',
+                    'category': 'Other',
+                    'due_date': (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d'),
+                    'estimated_hours': 2.0,
+                    'suggested_delegate': None
+                })
+        
+        return enhanced_items
+    
+    def _enhance_action_item(self, raw_item: str, item_number: int, auto_categorize: bool, auto_delegate: bool) -> Dict[str, Any]:
+        """Enhance a raw action item with metadata using focused prompts."""
+        
+        system_prompt = """You are a task analyst. Analyze the given action item and return structured data.
+
+ANALYZE THE TASK FOR:
+1. Priority (Critical/High/Medium/Low)
+2. Category (Strategic/Technical/Meeting/Review/Administrative/Other)  
+3. Time estimate in hours (0.5 to 40.0)
+4. Due date (YYYY-MM-DD format, estimate if not specified)
+
+RETURN ONLY THIS JSON:
+{
+  "title": "Short clear title (max 50 chars)",
+  "description": "What needs to be done",
+  "priority": "Medium", 
+  "category": "Other",
+  "estimated_hours": 2.0,
+  "due_date": "2025-01-30"
+}"""
+
+        user_prompt = f"""Analyze this action item:
+
+{raw_item}
+
+Estimate a due date about 1 week from now unless urgency suggests otherwise.
+Return only the JSON object."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        try:
+            response = self._make_api_request(messages, max_tokens=min(500, self.max_tokens), temperature=self.extraction_temperature)
+            content = response['choices'][0]['message']['content'].strip()
+            
+            # Extract and parse JSON
+            content = self._extract_json_from_content(content)
+            enhanced_item = json.loads(content)
+            
+            # Validate required fields
+            required_fields = ['title', 'description', 'priority', 'category', 'estimated_hours', 'due_date']
+            for field in required_fields:
+                if field not in enhanced_item:
+                    enhanced_item[field] = self._get_default_value(field)
+            
+            # Add delegation suggestion if enabled
+            enhanced_item['suggested_delegate'] = None
+            if auto_delegate:
+                enhanced_item['suggested_delegate'] = self._suggest_delegate(raw_item)
+            
+            return enhanced_item
+            
+        except Exception as e:
+            print(f"Enhancement error: {e}")
+            return None
+    
+    def _extract_with_standard_prompt(self, text: str, auto_categorize: bool, auto_delegate: bool) -> List[Dict[str, Any]]:
+        """Standard extraction for non-Mistral models."""
+        system_prompt = """You are an expert project manager specialized in extracting action items from text. 
+
+Extract actionable tasks and return a JSON object with an "action_items" array. Each item needs:
+- title: Clear, concise title 
+- description: What needs to be done
+- priority: Critical/High/Medium/Low
+- category: Strategic/Technical/Meeting/Review/Administrative/Other
+- due_date: YYYY-MM-DD format
+- estimated_hours: 0.5 to 40.0
+- suggested_delegate: null or name if mentioned
+
+Return only the JSON object."""
+
+        user_prompt = f"""Extract action items from:
+
+{text}
+
+Return JSON with action_items array."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        response = self._make_api_request(messages, max_tokens=2000)
+        content = response['choices'][0]['message']['content']
+        
+        # Extract and parse JSON
+        content = self._extract_json_from_content(content)
+        result = json.loads(content)
+        return result.get('action_items', [])
+    
+    def _extract_json_from_content(self, content: str) -> str:
+        """Extract JSON from AI response content, handling common formatting issues."""
+        content = content.strip()
+        
+        # Remove code block markers
+        content = re.sub(r'^```(?:json)?\s*', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\s*```$', '', content, flags=re.MULTILINE)
+        
+        # Find JSON-like content
+        json_match = re.search(r'(\[.*\]|\{.*\})', content, re.DOTALL)
+        if json_match:
+            return json_match.group(1)
+        
+        return content
+    
+    def _get_default_value(self, field: str):
+        """Get default value for missing fields."""
+        defaults = {
+            'title': 'Action Item',
+            'description': 'Task needs completion',
+            'priority': 'Medium',
+            'category': 'Other',
+            'estimated_hours': 2.0,
+            'due_date': (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+        }
+        return defaults.get(field, '')
+    
+    def _suggest_delegate(self, text: str) -> str:
+        """Simple delegation suggestion based on text content."""
+        text_lower = text.lower()
+        
+        # Look for role indicators
+        if any(word in text_lower for word in ['develop', 'code', 'implement', 'build']):
+            return 'Developer'
+        elif any(word in text_lower for word in ['design', 'ui', 'ux', 'mockup']):
+            return 'Designer'  
+        elif any(word in text_lower for word in ['test', 'qa', 'verify', 'validate']):
+            return 'QA Engineer'
+        elif any(word in text_lower for word in ['market', 'customer', 'user research']):
+            return 'Marketing Team'
+        elif any(word in text_lower for word in ['document', 'write', 'spec']):
+            return 'Technical Writer'
+        
+        return None
     
     def _fallback_extraction(self, text: str) -> List[Dict[str, Any]]:
         """Fallback extraction using simple text analysis when AI is not available."""
