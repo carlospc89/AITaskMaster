@@ -68,8 +68,8 @@ def render_dashboard():
         completed = len([t for t in st.session_state.tasks if t['status'] == 'Completed'])
         st.metric("Completed", completed)
     with col3:
-        high_priority = len([t for t in st.session_state.tasks if t.get('priority') == 'High'])
-        st.metric("High Priority", high_priority)
+        urgent_priority = len([t for t in st.session_state.tasks if t.get('priority') in ['High', 'Critical']])
+        st.metric("Urgent Tasks", urgent_priority)
     with col4:
         if st.button("🔄 Refresh", help="Refresh dashboard"):
             st.rerun()
@@ -128,7 +128,7 @@ def render_dashboard():
                            y=list(priority_counts.values()),
                            title="Priority Distribution",
                            color=list(priority_counts.keys()),
-                           color_discrete_map={'High': '#FF6B6B', 'Medium': '#4ECDC4', 'Low': '#45B7D1'})
+                           color_discrete_map={'Critical': '#FF0000', 'High': '#FF6B6B', 'Medium': '#4ECDC4', 'Low': '#45B7D1'})
                 st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No tasks yet. Use the 'Extract Tasks' or 'Add Task' tabs to get started!")
@@ -195,8 +195,11 @@ def render_extract_tasks():
             max_items = st.number_input("Maximum items to extract", min_value=1, max_value=20, value=10)
             auto_delegate = st.checkbox("Auto-suggest delegation", value=True)
         with col2:
-            default_priority = st.selectbox("Default priority", ['Low', 'Medium', 'High'], 
-                                          index=['Low', 'Medium', 'High'].index(st.session_state.settings.get('default_priority', 'Medium')))
+            priority_options = ['Low', 'Medium', 'High', 'Critical']
+            current_default = st.session_state.settings.get('default_priority', 'Medium')
+            priority_index = priority_options.index(current_default) if current_default in priority_options else 1
+            default_priority = st.selectbox("Default priority", priority_options, 
+                                              index=priority_index)
             categorize = st.checkbox("Auto-categorize tasks", value=True)
     
     # Extract button
@@ -251,8 +254,11 @@ def render_extract_tasks():
                     
                     col1a, col1b = st.columns(2)
                     with col1a:
-                        priority = st.selectbox(f"Priority {i+1}", ['Low', 'Medium', 'High'], 
-                                              index=['Low', 'Medium', 'High'].index(item.get('priority', 'Medium')),
+                        priority_options = ['Low', 'Medium', 'High', 'Critical']
+                        item_priority = item.get('priority', 'Medium')
+                        priority_index = priority_options.index(item_priority) if item_priority in priority_options else 1
+                        priority = st.selectbox(f"Priority {i+1}", priority_options, 
+                                              index=priority_index,
                                               key=f"priority_{i}")
                         category = st.selectbox(f"Category {i+1}", st.session_state.settings['categories'],
                                               index=st.session_state.settings['categories'].index(item.get('category', 'Other')) 
@@ -318,7 +324,7 @@ def render_manage_tasks():
                                    options=['All'] + list(set([t.get('status', 'Not Started') for t in st.session_state.tasks])))
     with col2:
         priority_filter = st.selectbox("Filter by Priority", 
-                                     options=['All'] + ['High', 'Medium', 'Low'])
+                                     options=['All'] + ['Critical', 'High', 'Medium', 'Low'])
     with col3:
         category_filter = st.selectbox("Filter by Category", 
                                      options=['All'] + st.session_state.settings['categories'])
@@ -357,8 +363,11 @@ def render_manage_tasks():
                     new_status = st.selectbox(f"Status", ['Not Started', 'In Progress', 'Completed', 'On Hold'],
                                             index=['Not Started', 'In Progress', 'Completed', 'On Hold'].index(task.get('status', 'Not Started')),
                                             key=f"edit_status_{task.get('id', i)}")
-                    new_priority = st.selectbox(f"Priority", ['Low', 'Medium', 'High'],
-                                              index=['Low', 'Medium', 'High'].index(task.get('priority', 'Medium')),
+                    priority_options = ['Low', 'Medium', 'High', 'Critical']
+                    task_priority = task.get('priority', 'Medium')
+                    priority_index = priority_options.index(task_priority) if task_priority in priority_options else 1
+                    new_priority = st.selectbox(f"Priority", priority_options,
+                                              index=priority_index,
                                               key=f"edit_priority_{task.get('id', i)}")
                 with col1b:
                     new_category = st.selectbox(f"Category", st.session_state.settings['categories'],
@@ -446,7 +455,7 @@ def render_analytics():
     
     total_tasks = len(st.session_state.tasks)
     completed_tasks = len([t for t in st.session_state.tasks if t.get('status') == 'Completed'])
-    high_priority = len([t for t in st.session_state.tasks if t.get('priority') == 'High'])
+    high_priority = len([t for t in st.session_state.tasks if t.get('priority') in ['High', 'Critical']])
     overdue_tasks = 0
     
     # Calculate overdue tasks
@@ -521,8 +530,11 @@ def render_settings():
     # Task Settings
     st.subheader("📋 Task Settings")
     with st.expander("Default Task Settings", expanded=True):
-        default_priority = st.selectbox("Default Priority", ['Low', 'Medium', 'High'],
-                                      index=['Low', 'Medium', 'High'].index(st.session_state.settings.get('default_priority', 'Medium')))
+        priority_options = ['Low', 'Medium', 'High', 'Critical']
+        current_default = st.session_state.settings.get('default_priority', 'Medium')
+        priority_index = priority_options.index(current_default) if current_default in priority_options else 1
+        default_priority = st.selectbox("Default Priority", priority_options,
+                                      index=priority_index)
         st.session_state.settings['default_priority'] = default_priority
     
     # Categories Management
