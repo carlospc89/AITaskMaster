@@ -1,0 +1,304 @@
+2025-07-25 14:25:57 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpsh0c8d9g.txt
+2025-07-25 14:26:58 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpshgfmffa.txt
+2025-07-25 14:29:18 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmp5k1wi4qv.txt
+2025-07-25 14:30:13 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpbm3r444v.txt
+2025-07-25 15:39:31 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 15:39:31 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 15:39:38 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpnp_tecxf.txt
+2025-07-25 15:39:38 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 15:40:09 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 15:40:09 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Friday'}
+2025-07-25 15:40:09 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'Monday'}
+2025-07-25 15:40:09 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'end of this week'}
+2025-07-25 15:40:09 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 15:40:09 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 15:40:22 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 15:40:22 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the Q3 presentation",
+    "due_date": "25/07/2025"
+  },
+  {
+    "task": "Review the budget proposal",
+    "due_date": "28/07/2025"
+  },
+  {
+    "task": "Research competitor analysis",
+    "due_date": "25/07/2025"
+  }
+]
+```
+2025-07-25 15:40:22 - TaskMasterAI - ERROR - Failed to decode JSON from AI response.
+2025-07-25 15:42:13 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmppc47mcug.txt
+2025-07-25 15:42:13 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 15:42:22 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 15:42:22 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Friday'}
+2025-07-25 15:42:22 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'Monday'}
+2025-07-25 15:42:22 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'end of this week'}
+2025-07-25 15:42:22 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 15:42:22 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 15:42:35 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 15:42:35 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the Q3 presentation",
+    "due_date": "25/07/2025"
+  },
+  {
+    "task": "Review the budget proposal",
+    "due_date": "28/07/2025"
+  },
+  {
+    "task": "Research competitor analysis",
+    "due_date": "25/07/2025"
+  }
+]
+```
+2025-07-25 15:51:26 - TaskMasterAI - INFO - Reading file: /private/var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/pytest-of-cpalomar1/pytest-0/test_read_file_dispatcher0/sub/hello.txt
+2025-07-25 15:51:26 - TaskMasterAI - INFO - Reading file: /private/var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/pytest-of-cpalomar1/pytest-0/test_read_file_dispatcher0/sub/test.xyz
+2025-07-25 15:51:26 - TaskMasterAI - ERROR - Unsupported file type attempted: .xyz
+2025-07-25 15:51:26 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 15:54:35 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpri2fftt8.txt
+2025-07-25 15:54:35 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 15:54:53 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 15:54:53 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Friday'}
+2025-07-25 15:54:53 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'Monday'}
+2025-07-25 15:54:53 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'end of this week'}
+2025-07-25 15:54:53 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 15:54:53 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 15:55:06 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 15:55:06 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the Q3 presentation",
+    "due_date": "25/07/2025"
+  },
+  {
+    "task": "Review the budget proposal",
+    "due_date": "28/07/2025"
+  },
+  {
+    "task": "Research competitor analysis",
+    "due_date": "25/07/2025"
+  }
+]
+```
+2025-07-25 16:04:13 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:04:13 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:04:13 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:04:13 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:04:18 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpwl5krneg.txt
+2025-07-25 16:04:18 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:04:36 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 16:04:36 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Friday'}
+2025-07-25 16:04:36 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'Monday'}
+2025-07-25 16:04:36 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'end of this week'}
+2025-07-25 16:04:36 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 16:04:36 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:04:49 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 16:04:49 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the Q3 presentation",
+    "due_date": "25/07/2025"
+  },
+  {
+    "task": "Review the budget proposal",
+    "due_date": "28/07/2025"
+  },
+  {
+    "task": "Research competitor analysis",
+    "due_date": "25/07/2025"
+  }
+]
+```
+2025-07-25 16:04:49 - TaskMasterAI - INFO - Inserted new source document with ID: 1
+2025-07-25 16:04:49 - TaskMasterAI - INFO - Inserted 3 action items for source ID 1.
+2025-07-25 16:10:57 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:10:57 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:10:57 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:10:57 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:15:06 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:15:06 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:15:06 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:15:06 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:15:29 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmp58yop_sj.txt
+2025-07-25 16:15:29 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:15:46 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 16:15:46 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Friday'}
+2025-07-25 16:15:46 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'Monday'}
+2025-07-25 16:15:46 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'end of this week'}
+2025-07-25 16:15:46 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 16:15:46 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:15:59 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 16:15:59 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the Q3 presentation",
+    "due_date": "25/07/2025"
+  },
+  {
+    "task": "Review the budget proposal",
+    "due_date": "28/07/2025"
+  },
+  {
+    "task": "Research competitor analysis",
+    "due_date": "25/07/2025"
+  }
+]
+```
+2025-07-25 16:15:59 - TaskMasterAI - INFO - Inserted new source document with ID: 1
+2025-07-25 16:15:59 - TaskMasterAI - INFO - Inserted 3 action items for source ID 1.
+2025-07-25 16:16:07 - TaskMasterAI - INFO - Reading file: /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpcte1f8u8.txt
+2025-07-25 16:21:33 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:21:33 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:21:33 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:21:33 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:21:57 - TaskMasterAI - INFO - Updated item 3 with new data: {'task_description': 'Research competitor analysis', 'due_date': '31/07/2025', 'priority': '🟠 Medium'}
+2025-07-25 16:34:35 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:34:35 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:34:35 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:34:35 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:35:07 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:35:24 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 16:35:24 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Wednesday'}
+2025-07-25 16:35:24 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'tomorrow'}
+2025-07-25 16:35:24 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 16:35:24 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:35:35 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 16:35:35 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the data pipelines",
+    "due_date": "30/07/2025",
+    "project": "SOLID"
+  },
+  {
+    "task": "Present about the status of GenAI projects",
+    "due_date": "26/07/2025",
+    "project": "GenAI"
+  }
+]
+```
+2025-07-25 16:35:35 - TaskMasterAI - INFO - Inserted 2 action items for source ID 1.
+2025-07-25 16:36:21 - TaskMasterAI - INFO - Updated item 1 with new data: {'task_description': 'Prepare the data pipelines', 'due_date': '31/07/2025', 'priority': '🔴 High', 'project': 'SOLID'}
+2025-07-25 16:41:36 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:41:36 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:41:36 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:41:36 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:41:39 - TaskMasterAI - INFO - Requesting prioritization from the model...
+2025-07-25 16:51:50 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 16:51:50 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 16:51:50 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 16:51:50 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 16:52:13 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:52:28 - TaskMasterAI - INFO - Does an action exist? True
+2025-07-25 16:52:28 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'next Wednesday'}
+2025-07-25 16:52:28 - TaskMasterAI - INFO - Calling tool: parse_natural_date with args: {'date_text': 'tomorrow'}
+2025-07-25 16:52:28 - TaskMasterAI - INFO - Returning to the model with tool results.
+2025-07-25 16:52:28 - TaskMasterAI - INFO - Calling the model...
+2025-07-25 16:52:40 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-25 16:52:40 - TaskMasterAI - INFO - Raw AI Response: ```json
+[
+  {
+    "task": "Prepare the data pipelines",
+    "due_date": "30/07/2025",
+    "project": "SOLID"
+  },
+  {
+    "task": "Present about the status of GenAI projects",
+    "due_date": "26/07/2025",
+    "project": "GenAI"
+  }
+]
+```
+2025-07-25 16:52:40 - TaskMasterAI - INFO - Inserted 2 action items for source ID 1.
+2025-07-25 16:52:57 - TaskMasterAI - INFO - Requesting prioritization from the model...
+2025-07-25 17:01:02 - TaskMasterAI - INFO - Successfully loaded Jira CSV from /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpde04q5cw.csv
+2025-07-25 17:01:02 - TaskMasterAI - WARNING - JIRA_USER_NAME not set in .env file. Cannot filter tasks.
+2025-07-25 17:01:06 - TaskMasterAI - INFO - Successfully loaded Jira CSV from /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmp2th6tpva.csv
+2025-07-25 17:01:06 - TaskMasterAI - WARNING - JIRA_USER_NAME not set in .env file. Cannot filter tasks.
+2025-07-25 17:02:04 - TaskMasterAI - INFO - Successfully loaded Jira CSV from /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpu2u4z2oa.csv
+2025-07-25 17:02:04 - TaskMasterAI - WARNING - JIRA_USER_NAME not set in .env file. Cannot filter tasks.
+2025-07-25 17:02:20 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:02:20 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:02:20 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:02:20 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:02:31 - TaskMasterAI - INFO - Successfully loaded Jira CSV from /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpqd6qh6_4.csv
+2025-07-25 17:02:31 - TaskMasterAI - INFO - Found 8 tasks assigned to cpalomar1@PMINTL.NET.
+2025-07-25 17:02:31 - TaskMasterAI - INFO - Inserted 8 action items for source ID 2.
+2025-07-25 17:05:23 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:05:23 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:05:23 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:05:23 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:08:42 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:08:42 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:08:42 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:08:42 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:08:48 - TaskMasterAI - WARNING - Dropping all tables from the database.
+2025-07-25 17:08:48 - TaskMasterAI - INFO - All tables dropped and recreated successfully.
+2025-07-25 17:09:06 - TaskMasterAI - INFO - Successfully loaded Jira CSV from /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmpo88rpbwt.csv
+2025-07-25 17:09:06 - TaskMasterAI - INFO - Found 8 tasks assigned to cpalomar1@PMINTL.NET.
+2025-07-25 17:09:06 - TaskMasterAI - INFO - Inserted 8 action items for source ID 1.
+2025-07-25 17:10:39 - TaskMasterAI - INFO - Requesting prioritization from the model...
+2025-07-25 17:19:06 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:19:06 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:19:06 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:19:06 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:19:13 - TaskMasterAI - INFO - Requesting due date recommendation for task: Document front end code & check feasibility to use in ELMAEG
+2025-07-25 17:20:02 - TaskMasterAI - INFO - Requesting due date recommendation for task: Document front end code & check feasibility to use in ELMAEG
+2025-07-25 17:20:11 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:20:11 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:20:11 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:20:11 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:20:16 - TaskMasterAI - INFO - Requesting due date recommendation for task: Document front end code & check feasibility to use in ELMAEG
+2025-07-25 17:23:28 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:23:28 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:23:28 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:23:28 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:23:31 - TaskMasterAI - INFO - Requesting due date recommendation for task: Document front end code & check feasibility to use in ELMAEG
+2025-07-25 17:27:19 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 17:27:19 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 17:27:19 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 17:27:19 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 17:28:01 - TaskMasterAI - WARNING - Dropping all tables from the database.
+2025-07-25 17:28:01 - TaskMasterAI - INFO - All tables dropped and recreated successfully.
+2025-07-25 17:28:03 - TaskMasterAI - WARNING - Dropping all tables from the database.
+2025-07-25 17:28:03 - TaskMasterAI - INFO - All tables dropped and recreated successfully.
+2025-07-25 17:28:21 - TaskMasterAI - INFO - Successfully loaded Jira CSV from /var/folders/w4/tx4w77sx5vlbhnwq67gvhsj80000gn/T/tmp08c10tk5.csv
+2025-07-25 17:28:21 - TaskMasterAI - INFO - Found 8 tasks assigned to cpalomar1@PMINTL.NET.
+2025-07-25 17:28:21 - TaskMasterAI - INFO - Inserted 8 action items for source ID 1.
+2025-07-25 18:17:52 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:17:52 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:17:52 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:17:52 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:18:23 - TaskMasterAI - INFO - Updated item 8 with new data: {'task_description': 'Document front end code & check feasibility to use in ELMAEG', 'due_date': None, 'project': 'DOCONVAI', 'priority': '🟠 Medium', 'status': 'In Progress', 'created_at': '2025-07-25'}
+2025-07-25 18:19:39 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:19:39 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:19:39 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:19:39 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:19:56 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:19:56 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:19:56 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:19:56 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:22:19 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:22:19 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:22:19 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:22:19 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:22:48 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:22:48 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:22:48 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:22:48 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:28:56 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:28:56 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:28:56 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:28:56 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:33:27 - TaskMasterAI - ERROR - Failed to update item 8: Error binding parameter 5 - probably unsupported type.
+2025-07-25 18:33:27 - TaskMasterAI - ERROR - Failed to update item 7: Error binding parameter 5 - probably unsupported type.
+2025-07-25 18:48:38 - TaskMasterAI - INFO - Updated item 8 with new data: {'task_description': 'Document front end code & check feasibility to use in ELMAEG', 'due_date': '28/07/2025', 'project': 'DOCONVAI', 'priority': '🟠 Medium', 'status': 'In Progress', 'created_at': '25/07/2025'}
+2025-07-25 18:55:05 - TaskMasterAI - INFO - Initializing services...
+2025-07-25 18:55:06 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-25 18:55:06 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-25 18:55:06 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-25 18:55:32 - TaskMasterAI - ERROR - Failed to update item 7: Error binding parameter 5 - probably unsupported type.

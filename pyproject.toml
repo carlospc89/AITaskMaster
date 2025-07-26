@@ -1,13 +1,23 @@
 [project]
-name = "repl-nix-workspace"
+name = "task-master-project"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
-    "openai>=1.97.0",
+    "langchain-community>=0.3.27",
+    "langchain-core>=0.3.72",
+    "langchain-ollama>=0.3.6",
+    "langgraph>=0.5.4",
     "pandas>=2.3.1",
+    "parsedatetime>=2.6",
     "plotly>=6.2.0",
-    "requests>=2.32.4",
-    "sqlalchemy>=2.0.41",
+    "pypdf>=5.8.0",
+    "pytest>=8.4.1",
+    "python-docx>=1.2.0",
+    "python-dotenv>=1.1.1",
+    "pyyaml>=6.0.2",
+    "spacy>=3.8.7",
     "streamlit>=1.47.0",
+    "streamlit-calendar>=1.4.0",
+    "tavily-python>=0.7.10",
 ]

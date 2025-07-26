@@ -1,0 +1,8 @@
+# In config.yaml
+priority_rules:
+  - keywords: ["report", "presentation", "prepare", "finish"]
+    priority: "🔴 High"
+  - keywords: ["review", "research", "check"]
+    priority: "🟠 Medium"
+  - keywords: ["think about", "consider"]
+    priority: "🟢 Low"
