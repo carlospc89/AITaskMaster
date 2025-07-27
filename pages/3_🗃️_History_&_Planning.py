@@ -3,37 +3,37 @@ import streamlit as st
 import pandas as pd
 import os
 
-# We need to re-import all necessary components for this page
 from task_assistant.database_handler import DatabaseHandler
 from task_assistant.agent import Agent
 from task_assistant.prompts import prioritization_prompt
 from langchain_ollama.chat_models import ChatOllama
+from task_assistant.logger_config import log
+
 
 # --- Initialization ---
-@st.cache_resource
+# THIS DECORATOR HAS BEEN REMOVED
 def init_page_services():
     db_handler = DatabaseHandler()
     model_name = os.getenv("OLLAMA_MODEL", "mistral")
     model = ChatOllama(model=model_name)
-    agent = Agent(model, system="") # System prompt is not needed for prioritization
+    agent = Agent(model, system="")
     return db_handler, agent
+
 
 db_handler, abot = init_page_services()
 
+
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Cleans a DataFrame to prevent Arrow serialization errors in Streamlit.
-    """
     df_copy = df.copy()
     for col in df_copy.columns:
         if pd.api.types.is_datetime64_any_dtype(df_copy[col]):
             continue
         if df_copy[col].dtype == 'object':
             df_copy[col] = df_copy[col].astype(str).fillna('')
-        # This is the critical part for the ArrowInvalid error
         if "Int64" in str(df_copy[col].dtype):
-             df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0).astype(int)
+            df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0).astype(int)
     return df_copy
+
 
 # --- Page Content ---
 st.subheader("Action Item History & Planning")
@@ -41,7 +41,7 @@ st.subheader("Action Item History & Planning")
 if st.button("🤖 What should I do next?"):
     with st.spinner("AI is thinking..."):
         all_tasks_df = db_handler.get_all_action_items_as_df()
-        all_tasks_df = sanitize_df_for_streamlit(all_tasks_df) # Sanitize before use
+        all_tasks_df = sanitize_df_for_streamlit(all_tasks_df)
         active_tasks_df = all_tasks_df[all_tasks_df['status'] != 'Done']
         if not active_tasks_df.empty:
             tasks_json = active_tasks_df.to_json(orient="records")
@@ -54,10 +54,8 @@ st.divider()
 st.markdown("#### 🔎 Filter and Search Tasks")
 
 full_df = db_handler.get_all_action_items_as_df()
-# THIS IS THE FIX: Sanitize the DataFrame immediately after loading it
 full_df = sanitize_df_for_streamlit(full_df)
 
-# (The rest of your filtering logic is the same)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     search_query = st.text_input("Search by keyword", placeholder="Search in tasks...")
@@ -82,10 +80,11 @@ if selected_status != "All":
     filtered_df = filtered_df[filtered_df['status'] == selected_status]
 
 st.divider()
-st.session_state.df_before_edit = filtered_df.copy()
+
+st.session_state.df_for_editing = filtered_df.reset_index(drop=True)
 
 edited_df = st.data_editor(
-    filtered_df,
+    st.session_state.df_for_editing,
     num_rows="dynamic",
     column_config={
         "id": st.column_config.NumberColumn("ID", disabled=True),
@@ -100,21 +99,30 @@ edited_df = st.data_editor(
 )
 
 if st.button("💾 Save Changes"):
+    log.info("--- 'Save Changes' button clicked ---")
     try:
-        original_visible_df = st.session_state.df_before_edit
-        deleted_ids = list(set(original_visible_df['id']) - set(edited_df['id']))
+        edited_rows = st.session_state["data_editor"].get("edited_rows", {})
+        if edited_rows:
+            updates = []
+            for row_index, changed_data in edited_rows.items():
+                item_id = st.session_state.df_for_editing.iloc[row_index]['id']
+                db_handler.update_action_item(item_id, changed_data)
+                updates.append(item_id)
+            if updates:
+                st.toast(f"Updated {len(updates)} task(s).")
+
+        original_ids = set(st.session_state.df_for_editing['id'])
+        current_ids = set(edited_df['id'])
+        deleted_ids = list(original_ids - current_ids)
         if deleted_ids:
             db_handler.delete_action_items(deleted_ids)
             st.toast(f"Deleted {len(deleted_ids)} task(s).")
-        updates = []
-        for _, row in edited_df.iterrows():
-            if pd.isna(row['id']): continue
-            original_row = original_visible_df[original_visible_df['id'] == row['id']]
-            if not original_row.empty and not row.equals(original_row.iloc[0]):
-                db_handler.update_action_item(row['id'], row.to_dict())
-                updates.append(row['id'])
-        if updates: st.toast(f"Updated {len(updates)} task(s).")
-        if not deleted_ids and not updates: st.toast("No changes to save.")
+
+        if not edited_rows and not deleted_ids:
+            st.toast("No changes to save.")
+
         st.rerun()
+
     except Exception as e:
+        log.error(f"CRITICAL ERROR in 'Save Changes' block: {e}", exc_info=True)
         st.error(f"An error occurred while saving changes: {e}")

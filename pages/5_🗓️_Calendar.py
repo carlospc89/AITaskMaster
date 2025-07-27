@@ -7,7 +7,6 @@ from task_assistant.logger_config import log
 
 
 # --- Initialization ---
-@st.cache_resource
 def init_calendar_services():
     db_handler = DatabaseHandler()
     return db_handler

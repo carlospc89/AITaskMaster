@@ -15,7 +15,6 @@ from langchain_ollama.chat_models import ChatOllama
 from langchain_core.messages import HumanMessage
 
 # --- Initialization ---
-@st.cache_resource
 def init_page_services():
     """Initializes services needed for this specific page."""
     log.info("Initializing services for Paste Text page...")

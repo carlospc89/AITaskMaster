@@ -11,7 +11,6 @@ from task_assistant.logger_config import log
 
 
 # --- Initialization ---
-@st.cache_resource
 def init_page_services():
     """Initializes services needed for this specific page."""
     log.info("Initializing services for Jira Import page...")
