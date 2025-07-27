@@ -1,3 +1,4 @@
+# In task_assistant/jira_handler.py
 import pandas as pd
 import os
 from .logger_config import log
@@ -23,20 +24,19 @@ def process_jira_csv(file_path: str) -> list[dict]:
     user_tasks_df = df[df['Assignee'] == jira_user].copy()
     log.info(f"Found {len(user_tasks_df)} tasks assigned to {jira_user}.")
 
-    # --- Status Mapping Logic ---
     status_mapping = {
         "to do": "To Do",
         "in progress": "In Progress",
         "done": "Done",
-        "closed": "Done",  # Map "Closed" to "Done"
+        "closed": "Done",
         "blocked": "Blocked",
     }
 
     tasks = []
     for _, row in user_tasks_df.iterrows():
-        due_date = pd.to_datetime(row.get('Due date')).strftime('%d/%m/%Y') if pd.notna(row.get('Due date')) else None
+        # MODIFIED: Changed strftime format to YYYY-MM-DD for consistency
+        due_date = pd.to_datetime(row.get('Due date')).strftime('%Y-%m-%d') if pd.notna(row.get('Due date')) else None
 
-        # Get and map the status, defaulting to "To Do"
         jira_status = row.get('Status', '').lower()
         app_status = status_mapping.get(jira_status, "To Do")
 
@@ -44,7 +44,7 @@ def process_jira_csv(file_path: str) -> list[dict]:
             "task": row.get('Summary'),
             "project": row.get('Project name'),
             "due_date": due_date,
-            "status": app_status,  # Use the mapped status
+            "status": app_status,
         })
 
     return tasks

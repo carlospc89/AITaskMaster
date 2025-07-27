@@ -1,0 +1,7 @@
+.env
+app.log
+task_master.db
+uv.lock
+.venv
+.virtual_documents
+.ipynb_checkpoints

@@ -4,10 +4,8 @@ import pandas as pd
 from datetime import datetime
 from .logger_config import log
 
-
 class DatabaseHandler:
     def __init__(self, db_name="task_master.db"):
-        """Initializes the database connection and creates tables if they don't exist."""
         try:
             self.conn = sqlite3.connect(db_name, check_same_thread=False)
             self.cursor = self.conn.cursor()
@@ -18,7 +16,6 @@ class DatabaseHandler:
             raise
 
     def _create_tables(self):
-        """Creates the necessary tables if they do not already exist."""
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS source_documents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,23 +38,20 @@ class DatabaseHandler:
             );
         """)
         self.conn.commit()
+        log.info("Database tables ensured to exist.")
 
     def _calculate_hash(self, content: str) -> str:
-        """Calculates the SHA-256 hash of a string."""
         return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
     def check_source_exists(self, content: str) -> bool:
-        """Checks if a source document with the same content hash already exists."""
         content_hash = self._calculate_hash(content)
         self.cursor.execute("SELECT id FROM source_documents WHERE content_hash = ?", (content_hash,))
         return self.cursor.fetchone() is not None
 
     def insert_data(self, source_name: str, content: str, tasks: list[dict]):
-        """Inserts a new source document and its associated action items."""
         if self.check_source_exists(content):
             log.warning("Attempted to insert a duplicate source document. Operation cancelled.")
             return
-
         try:
             content_hash = self._calculate_hash(content)
             processed_at = datetime.now()
@@ -86,22 +80,49 @@ class DatabaseHandler:
             self.conn.rollback()
 
     def get_all_action_items_as_df(self):
-        """Fetches all action items and returns them as a pandas DataFrame."""
+        """
+        Fetches all action items and returns a sanitized DataFrame
+        that is safe for Streamlit's Arrow-based serialization.
+        """
         query = "SELECT id, task_description, due_date, project, priority, status, created_at FROM action_items ORDER BY id DESC"
         df = pd.read_sql_query(query, self.conn)
 
-        # --- FIX: Apply dayfirst=True to both date columns for consistent parsing ---
-        df['created_at'] = pd.to_datetime(df['created_at'], dayfirst=True, errors='coerce')
-        df['due_date'] = pd.to_datetime(df['due_date'], dayfirst=True, errors='coerce')
+        # Return an empty, but correctly typed, DataFrame if the database is empty
+        if df.empty:
+            return pd.DataFrame({
+                'id': pd.Series(dtype='int'),
+                'task_description': pd.Series(dtype='str'),
+                'due_date': pd.Series(dtype='datetime64[ns]'),
+                'project': pd.Series(dtype='str'),
+                'priority': pd.Series(dtype='str'),
+                'status': pd.Series(dtype='str'),
+                'created_at': pd.Series(dtype='datetime64[ns]'),
+            })
+
+        # --- Data Sanitization for Arrow Compatibility ---
+
+        # 1. Handle date columns safely
+        df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
+        df['due_date'] = pd.to_datetime(df['due_date'], errors='coerce')
+
+        # 2. Convert all 'object' type columns to strings and fill NaNs
+        # This prevents Arrow from crashing on mixed-type columns.
+        for col in df.select_dtypes(include=['object']).columns:
+            df[col] = df[col].astype(str).fillna('')
+
+        # 3. Convert integer columns to a safe, non-nullable format
+        # This is the most critical step to prevent the ArrowInvalid error.
+        df['id'] = pd.to_numeric(df['id'], errors='coerce').fillna(0).astype(int)
+
         return df
 
     def update_action_item(self, item_id: int, updates: dict):
-        """Updates specific fields for a given action item."""
         updates.pop("id", None)
+        if 'due_date' in updates and pd.notna(updates['due_date']):
+             updates['due_date'] = pd.to_datetime(updates['due_date']).strftime('%Y-%m-%d')
         set_clause = ", ".join([f"{key} = ?" for key in updates.keys()])
         values = list(updates.values()) + [item_id]
         query = f"UPDATE action_items SET {set_clause} WHERE id = ?"
-
         try:
             self.cursor.execute(query, values)
             self.conn.commit()
@@ -111,17 +132,24 @@ class DatabaseHandler:
             self.conn.rollback()
 
     def delete_action_items(self, item_ids: list[int]):
-        """Deletes action items by their IDs."""
-        if not item_ids:
-            return
-
+        if not item_ids: return
         placeholders = ", ".join("?" for _ in item_ids)
         query = f"DELETE FROM action_items WHERE id IN ({placeholders})"
-
         try:
             self.cursor.execute(query, item_ids)
             self.conn.commit()
             log.info(f"Deleted items with IDs: {item_ids}")
         except sqlite3.Error as e:
             log.error(f"Failed to delete items: {e}")
+            self.conn.rollback()
+
+    def drop_all_tables(self):
+        try:
+            self.cursor.execute("DROP TABLE IF EXISTS action_items")
+            self.cursor.execute("DROP TABLE IF EXISTS source_documents")
+            self.conn.commit()
+            log.info("All database tables have been dropped.")
+            self._create_tables()
+        except sqlite3.Error as e:
+            log.error(f"Failed to drop tables: {e}")
             self.conn.rollback()

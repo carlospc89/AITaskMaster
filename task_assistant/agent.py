@@ -2,12 +2,15 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated
 import operator
 from langchain_core.messages import AnyMessage, SystemMessage, ToolMessage, HumanMessage
+from datetime import datetime
 
 from .tools import all_tools
 from .logger_config import log
 
+
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
+
 
 class Agent:
     def __init__(self, model, system=""):
@@ -25,15 +28,22 @@ class Agent:
 
     def exists_action(self, state: AgentState) -> bool:
         result = state["messages"][-1]
-        action_exists = len(result.tool_calls) > 0
-        log.info(f"Does an action exist? {action_exists}")
-        return action_exists
+        return len(result.tool_calls) > 0
 
     def call_model(self, state: AgentState):
         log.info("Calling the model...")
         messages = state["messages"]
         if self.system:
-            messages = [SystemMessage(content=self.system)] + messages
+            # This is the new, robust way to build the prompt.
+            # It uses an f-string to combine the date with the static prompt template.
+            current_date_str = datetime.now().strftime("%A, %Y-%m-%d")
+
+            header = f"Your reference date for all calculations is: **{current_date_str}**."
+
+            final_system_prompt = f"{header}\n\n{self.system}"
+
+            messages = [SystemMessage(content=final_system_prompt)] + messages
+
         message = self.model.invoke(messages)
         return {"messages": [message]}
 
@@ -48,7 +58,6 @@ class Agent:
         return {"messages": results}
 
     def get_prioritization(self, tasks_json: str, system_prompt: str) -> str:
-        """Makes a one-off call to the model for a specific task like prioritization."""
         log.info("Requesting prioritization from the model...")
         messages = [
             SystemMessage(content=system_prompt),
