@@ -60,7 +60,7 @@ Task Master AI is an intelligent assistant that uses a Large Language Model (LLM
 Ensure Ollama is running, then launch the Streamlit app:
 
 ```bash
-streamlit run app.py
+streamlit run Task_Master.py
 ```
 
 ### Running Tests

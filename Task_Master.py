@@ -1,4 +1,4 @@
-# app.py
+# Task_Master.py
 import streamlit as st
 import os
 from task_assistant.database_handler import DatabaseHandler

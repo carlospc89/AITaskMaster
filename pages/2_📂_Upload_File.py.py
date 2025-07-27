@@ -33,7 +33,7 @@ def init_page_services():
 db_handler, abot, rules_engine = init_page_services()
 
 
-# This is the same processing function from the original app.py
+# This is the same processing function from the original Task_Master.py
 def process_and_display(content: str, source_name: str):
     """Processes content, stores it in the DB, and displays the result."""
     normalized_content = normalize_text(content)
