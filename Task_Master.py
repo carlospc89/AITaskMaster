@@ -1,4 +1,4 @@
-# Task_Master.py
+# app.py
 import streamlit as st
 import os
 from task_assistant.database_handler import DatabaseHandler
@@ -26,14 +26,11 @@ st.info(
     """
 )
 
-# You can keep this initialization here to ensure services are ready for other pages
-@st.cache_resource
+# This initialization ensures the DB is ready for other pages.
+# The decorator was removed to prevent caching issues.
 def init_services():
-    log.info("Initializing services...")
-    # This ensures the DB is initialized once and shared across pages
+    log.info("Initializing services for the main app...")
     db_handler = DatabaseHandler()
-    # You might need to initialize other services here if they are shared
-    # across pages via session_state, but for now, the DB is the most critical.
     return db_handler
 
 db = init_services()
@@ -42,3 +39,6 @@ if "model_name" not in st.session_state:
     st.session_state.model_name = os.getenv("OLLAMA_MODEL", "mistral")
 
 st.caption(f"Using model: {st.session_state.model_name}")
+
+# THIS IS THE NEW LINE TO DISPLAY THE STREAMLIT VERSION
+st.caption(f"Streamlit Version: {st.__version__}")
