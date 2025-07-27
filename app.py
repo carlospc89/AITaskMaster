@@ -127,37 +127,60 @@ with tab3:
 
     st.divider()
 
-    if 'edited_df' not in st.session_state or st.button("🔄 Refresh Table"):
-        st.session_state.edited_df = db_handler.get_all_action_items_as_df()
+    st.markdown("#### 🔎 Filter and Search Tasks")
+
+    full_df = db_handler.get_all_action_items_as_df()
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        search_query = st.text_input("Search by keyword", placeholder="Search in tasks...")
+    with col2:
+        project_list = ["All"] + sorted(full_df['project'].dropna().unique().tolist())
+        selected_project = st.selectbox("Filter by Project", project_list)
+    with col3:
+        priority_list = ["All"] + sorted(full_df['priority'].dropna().unique().tolist())
+        selected_priority = st.selectbox("Filter by Priority", priority_list)
+    with col4:
+        status_list = ["All"] + sorted(full_df['status'].dropna().unique().tolist())
+        selected_status = st.selectbox("Filter by Status", status_list)
+
+    filtered_df = full_df.copy()
+    if search_query:
+        filtered_df = filtered_df[filtered_df['task_description'].str.contains(search_query, case=False, na=False)]
+    if selected_project != "All":
+        filtered_df = filtered_df[filtered_df['project'] == selected_project]
+    if selected_priority != "All":
+        filtered_df = filtered_df[filtered_df['priority'] == selected_priority]
+    if selected_status != "All":
+        filtered_df = filtered_df[filtered_df['status'] == selected_status]
+
+    st.divider()
+
+    # --- BUG FIX: Store the dataframe that is being displayed in the editor ---
+    st.session_state.df_before_edit = filtered_df.copy()
 
     edited_df = st.data_editor(
-        st.session_state.edited_df,
+        filtered_df,
         num_rows="dynamic",
         column_config={
             "id": st.column_config.NumberColumn("ID", disabled=True),
             "task_description": st.column_config.TextColumn("Task", width="large"),
-            "due_date": st.column_config.DateColumn(
-                "Due Date",
-                format="DD/MM/YYYY"
-            ),
+            "due_date": st.column_config.DateColumn("Due Date", format="DD/MM/YYYY"),
             "project": st.column_config.TextColumn("Project"),
             "priority": st.column_config.SelectboxColumn("Priority",
                                                          options=["🔴 High", "🟠 Medium", "🟢 Low", "⚪ Normal"]),
             "status": st.column_config.SelectboxColumn("Status", options=["To Do", "In Progress", "Done", "Blocked"]),
-            "created_at": st.column_config.DateColumn(
-                "Created On",
-                format="DD/MM/YYYY",
-                disabled=True
-            )
+            "created_at": st.column_config.DateColumn("Created On", format="DD/MM/YYYY", disabled=True)
         },
         key="data_editor"
     )
 
     if st.button("💾 Save Changes"):
         try:
-            original_df = st.session_state.edited_df
+            # --- BUG FIX: Compare against the dataframe that was visible before editing ---
+            original_visible_df = st.session_state.df_before_edit
 
-            deleted_ids = list(set(original_df['id']) - set(edited_df['id']))
+            deleted_ids = list(set(original_visible_df['id']) - set(edited_df['id']))
             if deleted_ids:
                 db_handler.delete_action_items(deleted_ids)
                 st.toast(f"Deleted {len(deleted_ids)} task(s).")
@@ -167,7 +190,7 @@ with tab3:
                 item_id = row['id']
                 if pd.isna(item_id): continue
 
-                original_row = original_df[original_df['id'] == item_id]
+                original_row = original_visible_df[original_visible_df['id'] == item_id]
                 if not original_row.empty and not row.equals(original_row.iloc[0]):
                     update_dict = row.to_dict()
 
@@ -184,7 +207,6 @@ with tab3:
             if not deleted_ids and not updates:
                 st.toast("No changes to save.")
 
-            st.session_state.edited_df = db_handler.get_all_action_items_as_df()
             st.rerun()
         except Exception as e:
             st.error(f"An error occurred while saving changes: {e}")
@@ -221,52 +243,45 @@ with tab5:
     st.subheader("🗓️ Task Calendar")
     st.info("This calendar shows all your tasks that have a specific due date.")
 
-    if st.button("Refresh Calendar"):
-        st.session_state.calendar_df = db_handler.get_all_action_items_as_df()
+    calendar_df = db_handler.get_all_action_items_as_df()
 
-    if 'calendar_df' not in st.session_state:
-        st.session_state.calendar_df = db_handler.get_all_action_items_as_df()
+    if not calendar_df.empty:
+        df_filtered = calendar_df.dropna(subset=['due_date'])
 
-    if 'calendar_df' in st.session_state and not st.session_state.calendar_df.empty:
-        df = st.session_state.calendar_df.copy()
-        df_filtered = df.dropna(subset=['due_date'])
-
-
-        # --- Helper to format tasks for the calendar ---
-        def format_tasks_for_calendar(df):
-            calendar_events = []
-            for _, row in df.iterrows():
-                event = {
-                    "title": f"{row['priority']} - {row['task_description']}",
-                    "start": row['due_date'].isoformat(),
-                    "end": row['due_date'].isoformat(),
-                    "allDay": True,
-                    "extendedProps": {
-                        "project": row['project'],
-                        "status": row['status']
-                    }
-                }
-                calendar_events.append(event)
-            return calendar_events
+        if not df_filtered.empty:
+            def format_tasks_for_calendar(df):
+                events = []
+                for _, row in df.iterrows():
+                    events.append({
+                        "title": f"{row['priority']} - {row['task_description']}",
+                        "start": row['due_date'].isoformat(),
+                        "end": row['due_date'].isoformat(),
+                        "allDay": True,
+                        "extendedProps": {
+                            "project": row['project'],
+                            "status": row['status']
+                        }
+                    })
+                return events
 
 
-        calendar_events = format_tasks_for_calendar(df_filtered)
+            calendar_events = format_tasks_for_calendar(df_filtered)
 
-        # --- Calendar Configuration ---
-        calendar_options = {
-            "headerToolbar": {
-                "left": "prev,next today",
-                "center": "title",
-                "right": "dayGridMonth,timeGridWeek,timeGridDay",
-            },
-            "initialView": "dayGridMonth",
-            "editable": False,
-            "height": "auto",  # Add this line to make the calendar fully visible
-        }
-
-        calendar(events=calendar_events, options=calendar_options)
+            calendar_options = {
+                "headerToolbar": {
+                    "left": "prev,next today",
+                    "center": "title",
+                    "right": "dayGridMonth,timeGridWeek,timeGridDay",
+                },
+                "initialView": "dayGridMonth",
+                "editable": False,
+                "height": "auto",
+            }
+            calendar(events=calendar_events, options=calendar_options)
+        else:
+            st.warning("No tasks with due dates found to display on the calendar.")
     else:
-        st.warning("No tasks with due dates found.")
+        st.warning("No tasks found in the database.")
 
 with tab6:
     st.subheader("Application Settings")
@@ -276,9 +291,4 @@ with tab6:
         "This action will permanently delete all processed documents and action items from the database. This cannot be undone.")
     if st.button("❌ Drop All Database Tables"):
         db_handler.drop_all_tables()
-        if 'edited_df' in st.session_state:
-            del st.session_state['edited_df']
-        if 'calendar_df' in st.session_state:
-            del st.session_state['calendar_df']
-        st.success("All data has been deleted. The database has been reset.")
         st.rerun()

@@ -302,3 +302,45 @@
 2025-07-25 18:55:06 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
 2025-07-25 18:55:06 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
 2025-07-25 18:55:32 - TaskMasterAI - ERROR - Failed to update item 7: Error binding parameter 5 - probably unsupported type.
+2025-07-26 17:30:19 - TaskMasterAI - INFO - Initializing services...
+2025-07-26 17:30:19 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-26 17:30:19 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-26 17:30:19 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-26 17:30:48 - TaskMasterAI - INFO - Reading file: /var/folders/qm/vbtgv4rd44d40q9yxyxp8z9h0000gn/T/tmphyvptuc8.txt
+2025-07-26 17:30:48 - TaskMasterAI - INFO - Calling the model...
+2025-07-26 17:31:04 - TaskMasterAI - INFO - Does an action exist? False
+2025-07-26 17:31:04 - TaskMasterAI - INFO - Raw AI Response:  ```json
+[
+  {
+    "task": "Prepare the Q3 presentation",
+    "due_date": "29/07/2025",
+    "project": "None"
+  },
+  {
+    "task": "Review the budget proposal",
+    "due_date": "18/07/2025",
+    "project": "None"
+  },
+  {
+    "task": "Research competitor analysis",
+    "due_date": "23/07/2025",
+    "project": "None"
+  }
+]
+```
+2025-07-26 17:31:04 - TaskMasterAI - INFO - Inserted 3 action items for source ID 1.
+2025-07-26 17:31:13 - TaskMasterAI - INFO - Reading file: /var/folders/qm/vbtgv4rd44d40q9yxyxp8z9h0000gn/T/tmpem3dlri5.txt
+2025-07-26 17:31:23 - TaskMasterAI - INFO - Reading file: /var/folders/qm/vbtgv4rd44d40q9yxyxp8z9h0000gn/T/tmpnbiofs0z.txt
+2025-07-26 17:31:23 - TaskMasterAI - INFO - Reading file: /var/folders/qm/vbtgv4rd44d40q9yxyxp8z9h0000gn/T/tmp_1mxka5z.txt
+2025-07-26 17:31:23 - TaskMasterAI - INFO - Reading file: /var/folders/qm/vbtgv4rd44d40q9yxyxp8z9h0000gn/T/tmplpfv6oto.txt
+2025-07-26 17:31:26 - TaskMasterAI - INFO - Reading file: /var/folders/qm/vbtgv4rd44d40q9yxyxp8z9h0000gn/T/tmpg3daxju6.txt
+2025-07-26 17:41:21 - TaskMasterAI - INFO - Updated item 3 with new data: {'task_description': 'Research competitor analysis', 'due_date': '30/07/2025', 'project': 'None', 'priority': '🟠 Medium', 'status': 'To Do', 'created_at': '26/07/2025'}
+2025-07-26 17:48:35 - TaskMasterAI - INFO - Initializing services...
+2025-07-26 17:48:35 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-26 17:48:35 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-26 17:48:35 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'
+2025-07-26 17:50:14 - TaskMasterAI - INFO - Updated item 3 with new data: {'task_description': 'Research competitor analysis', 'due_date': '29/07/2025', 'project': 'None', 'priority': '🟠 Medium', 'status': 'To Do', 'created_at': '26/07/2025'}
+2025-07-27 12:15:02 - TaskMasterAI - INFO - Initializing services...
+2025-07-27 12:15:02 - TaskMasterAI - INFO - Agent initialized successfully.
+2025-07-27 12:15:02 - TaskMasterAI - INFO - Rules loaded successfully from config.yaml
+2025-07-27 12:15:02 - TaskMasterAI - INFO - Successfully connected to database 'task_master.db'

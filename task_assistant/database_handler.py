@@ -90,9 +90,9 @@ class DatabaseHandler:
         query = "SELECT id, task_description, due_date, project, priority, status, created_at FROM action_items ORDER BY id DESC"
         df = pd.read_sql_query(query, self.conn)
 
-        # Convert date columns to datetime objects for the UI
-        df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
-        df['due_date'] = pd.to_datetime(df['due_date'], format='%d/%m/%Y', errors='coerce')
+        # --- FIX: Apply dayfirst=True to both date columns for consistent parsing ---
+        df['created_at'] = pd.to_datetime(df['created_at'], dayfirst=True, errors='coerce')
+        df['due_date'] = pd.to_datetime(df['due_date'], dayfirst=True, errors='coerce')
         return df
 
     def update_action_item(self, item_id: int, updates: dict):
