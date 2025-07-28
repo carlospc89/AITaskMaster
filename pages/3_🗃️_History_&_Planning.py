@@ -2,25 +2,26 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime, timedelta
 
 from task_assistant.database_handler import DatabaseHandler
-from task_assistant.agent import Agent
-from task_assistant.prompts import prioritization_prompt
-from langchain_ollama.chat_models import ChatOllama
 from task_assistant.logger_config import log
+
+# Set the page to wide mode for a better layout
+st.set_page_config(
+    page_title="History & Planning",
+    page_icon="🗃️",
+    layout="wide"
+)
 
 
 # --- Initialization ---
-# THIS DECORATOR HAS BEEN REMOVED
 def init_page_services():
     db_handler = DatabaseHandler()
-    model_name = os.getenv("OLLAMA_MODEL", "mistral")
-    model = ChatOllama(model=model_name)
-    agent = Agent(model, system="")
-    return db_handler, agent
+    return db_handler
 
 
-db_handler, abot = init_page_services()
+db_handler = init_page_services()
 
 
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
@@ -37,38 +38,35 @@ def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
 
 # --- Page Content ---
 st.subheader("Action Item History & Planning")
+st.info("Here you can view, edit, delete, and filter all of your tasks.")
 
-if st.button("🤖 What should I do next?"):
-    with st.spinner("AI is thinking..."):
-        all_tasks_df = db_handler.get_all_action_items_as_df()
-        all_tasks_df = sanitize_df_for_streamlit(all_tasks_df)
-        active_tasks_df = all_tasks_df[all_tasks_df['status'] != 'Done']
-        if not active_tasks_df.empty:
-            tasks_json = active_tasks_df.to_json(orient="records")
-            suggestion = abot.get_prioritization(tasks_json, prioritization_prompt)
-            st.info(suggestion)
-        else:
-            st.warning("There are no active tasks to prioritize.")
-
-st.divider()
 st.markdown("#### 🔎 Filter and Search Tasks")
 
 full_df = db_handler.get_all_action_items_as_df()
 full_df = sanitize_df_for_streamlit(full_df)
 
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    search_query = st.text_input("Search by keyword", placeholder="Search in tasks...")
-with col2:
+# --- Filter Controls ---
+filter_cols = st.columns(5)
+with filter_cols[0]:
+    # THIS IS THE FIX: We give the text input a simple label for alignment.
+    search_query = st.text_input("Search", placeholder="Filter by keyword...")
+with filter_cols[1]:
     project_list = ["All"] + sorted(full_df['project'].dropna().unique().tolist())
-    selected_project = st.selectbox("Filter by Project", project_list)
-with col3:
+    selected_project = st.selectbox("Project", project_list)
+with filter_cols[2]:
     priority_list = ["All"] + sorted(full_df['priority'].dropna().unique().tolist())
-    selected_priority = st.selectbox("Filter by Priority", priority_list)
-with col4:
+    selected_priority = st.selectbox("Priority", priority_list)
+with filter_cols[3]:
     status_list = ["All"] + sorted(full_df['status'].dropna().unique().tolist())
-    selected_status = st.selectbox("Filter by Status", status_list)
+    selected_status = st.selectbox("Status", status_list)
+with filter_cols[4]:
+    date_range = st.date_input(
+        "Filter by Due Date",
+        value=(datetime.now().date() - timedelta(days=30), datetime.now().date() + timedelta(days=30)),
+        key="date_range_picker"
+    )
 
+# --- Apply Filters ---
 filtered_df = full_df.copy()
 if search_query:
     filtered_df = filtered_df[filtered_df['task_description'].str.contains(search_query, case=False, na=False)]
@@ -78,6 +76,14 @@ if selected_priority != "All":
     filtered_df = filtered_df[filtered_df['priority'] == selected_priority]
 if selected_status != "All":
     filtered_df = filtered_df[filtered_df['status'] == selected_status]
+
+if len(date_range) == 2:
+    start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+    filtered_df_dates = pd.to_datetime(filtered_df['due_date'], errors='coerce').dt.date
+    filtered_df = filtered_df[
+        (filtered_df_dates >= start_date.date()) &
+        (filtered_df_dates <= end_date.date())
+        ]
 
 st.divider()
 
@@ -99,7 +105,6 @@ edited_df = st.data_editor(
 )
 
 if st.button("💾 Save Changes"):
-    log.info("--- 'Save Changes' button clicked ---")
     try:
         edited_rows = st.session_state["data_editor"].get("edited_rows", {})
         if edited_rows:

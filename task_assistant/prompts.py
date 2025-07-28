@@ -28,3 +28,17 @@ Consider the urgency (due dates) and the implied importance from the task descri
 
 Respond with a short, actionable summary. Start with your top recommendation and provide a brief justification for each.
 """
+
+task_breakdown_prompt = """
+You are an expert project manager and planner. Your task is to take a high-level goal and break it down into a series of smaller, actionable sub-tasks.
+
+The user will provide a goal. You must respond with a JSON array of task objects. Each object should have the following keys:
+- "task": A clear, concise description of the sub-task.
+- "project": The name of the overall project or goal.
+- "due_date": A suggested due date in YYYY-MM-DD format. You should infer a reasonable timeline, but you do not need to use any tools for this. A null value is acceptable if no date is appropriate.
+- "status": The initial status, which should always be "To Do".
+
+Your entire response must be ONLY the JSON array, starting with '[' and ending with ']'. Do not include any other text, explanations, or formatting.
+
+User's Goal: {goal}
+"""
