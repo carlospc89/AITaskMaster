@@ -53,23 +53,33 @@ def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
 st.title("📊 Task Dashboard")
 st.markdown("Your AI-Powered Action Item Extractor and Planner.")
 
-# --- NEW: "What should I do next?" feature ---
+# --- "What should I do next?" feature ---
 st.markdown("---")
 if st.button("🤖 What should I do next?", type="primary"):
     with st.spinner("AI is thinking..."):
         all_tasks_df = db_handler.get_all_action_items_as_df()
-        all_tasks_df = sanitize_df_for_streamlit(all_tasks_df)
-        active_tasks_df = all_tasks_df[all_tasks_df['status'] != 'Done']
-        if not active_tasks_df.empty:
-            tasks_json = active_tasks_df.to_json(orient="records")
-            suggestion = abot.get_prioritization(tasks_json, prioritization_prompt)
-            st.info(suggestion)
-        else:
-            st.warning("You have no active tasks to prioritize. Great job!")
 
-# --- Data Loading and Processing for Dashboard ---
+        if not all_tasks_df.empty:
+            all_tasks_df = sanitize_df_for_streamlit(all_tasks_df)
+            active_tasks_df = all_tasks_df[all_tasks_df['status'] != 'Done']
+            if not active_tasks_df.empty:
+                tasks_json = active_tasks_df.to_json(orient="records")
+                suggestion = abot.get_prioritization(tasks_json, prioritization_prompt)
+                st.info(suggestion)
+            else:
+                st.warning("You have no active tasks to prioritize. Great job!")
+        else:
+            st.warning("No tasks found in the database to prioritize.")
+
+# --- Data Loading and Graceful Handling of Empty State ---
+full_df = db_handler.get_all_action_items_as_df()
+
+if full_df.empty:
+    st.info("👋 Welcome! Your task dashboard is ready. Add some tasks from the sidebar pages to get started.")
+    st.stop()  # Stop the rest of the script from executing
+
+# --- Dashboard Display (only runs if the database is NOT empty) ---
 try:
-    full_df = db_handler.get_all_action_items_as_df()
     full_df = sanitize_df_for_streamlit(full_df)
 
     if 'status' in full_df.columns:
