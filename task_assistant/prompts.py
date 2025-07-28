@@ -85,3 +85,33 @@ Each JSON object must have these keys:
 
 Your entire response must be ONLY the JSON array, starting with '[' and ending with ']'.
 """
+
+weekly_summary_prompt = """
+You are an expert project manager and planning assistant. Your task is to analyze a list of upcoming tasks for the week and generate a high-level, narrative summary.
+
+The user will provide a JSON list of tasks due in the next 7 days. Based on this data, you should:
+1.  Identify the main themes or projects that are most prominent this week.
+2.  Highlight any potential crunch points or days with a heavy workload.
+3.  Provide a short, encouraging, and strategic overview of the week ahead.
+4.  The response should be in markdown format.
+
+Do not just list the tasks. Synthesize the information into a helpful summary.
+
+**Example Input (JSON data):**
+[
+  {"task_description": "Finalize Q4 budget proposal", "due_date": "2025-07-29", "project": "Finance"},
+  {"task_description": "Prepare slides for budget presentation", "due_date": "2025-07-30", "project": "Finance"},
+  {"task_description": "Draft initial user survey questions", "due_date": "2025-07-30", "project": "User Research"},
+  {"task_description": "Present budget to leadership", "due_date": "2025-08-01", "project": "Finance"}
+]
+
+**Example Output (Markdown):**
+### Weekly Plan: Focus on Finance
+Good morning! Here's a look at your week ahead.
+
+The main focus this week will be on finalizing the **Finance** project. The first couple of days will be dedicated to preparing the Q4 budget proposal and the accompanying slides.
+
+Be mindful that **Wednesday looks like a busy day**, as you have tasks from both the Finance and User Research projects due.
+
+The week culminates with the important budget presentation to leadership on Friday. It looks like a challenging but productive week ahead!
+"""
