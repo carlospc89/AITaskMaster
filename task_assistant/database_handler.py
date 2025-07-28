@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime
 import json
 from .logger_config import log
+from .vector_store_handler import VectorStoreHandler
 
 
 class DatabaseHandler:
@@ -12,6 +13,8 @@ class DatabaseHandler:
         try:
             self.conn = sqlite3.connect(db_name, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
+            # Initialize the vector store handler
+            self.vector_store = VectorStoreHandler()
         except sqlite3.Error as e:
             log.error(f"Database connection error: {e}")
             raise
@@ -72,17 +75,14 @@ class DatabaseHandler:
         if not data_list:
             return self.get_empty_df()
 
-        df = pd.DataFrame(data_list)
+        df = pd.DataFrame.from_records(data_list)
 
-        # This is the corrected logic. It ensures the DataFrame always has a consistent structure.
         expected_cols = [
             'id', 'task_description', 'due_date', 'project',
             'priority', 'status', 'created_at'
         ]
-        # Reindex the DataFrame to guarantee all expected columns exist.
         df = df.reindex(columns=expected_cols)
 
-        # Now it is always safe to perform type conversions.
         df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
         df['due_date'] = pd.to_datetime(df['due_date'], errors='coerce')
 
@@ -121,6 +121,7 @@ class DatabaseHandler:
 
     def insert_data(self, source_name: str, content: str, tasks: list[dict]):
         if self.check_source_exists(content):
+            log.warning("Attempted to insert a duplicate source document. Operation cancelled.")
             return
         try:
             with self.conn:
@@ -140,8 +141,13 @@ class DatabaseHandler:
                         "INSERT INTO action_items (source_document_id, task_data, created_at) VALUES (?, ?, ?)",
                         (source_document_id, task_json, created_at)
                     )
-        except sqlite3.Error as e:
-            log.error(f"DATABASE ERROR during JSON insert for source '{source_name}': {e}")
+            log.info(f"SUCCESS: Inserted {len(tasks)} tasks into SQLite for source '{source_name}'.")
+
+            if not source_name.startswith("Jira Import"):
+                self.vector_store.add_document(content)
+
+        except Exception as e:
+            log.error(f"DATABASE ERROR during insert for source '{source_name}': {e}", exc_info=True)
 
     def delete_action_items(self, item_ids: list[int]):
         if not item_ids: return

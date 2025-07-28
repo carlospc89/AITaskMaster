@@ -42,3 +42,25 @@ Your entire response must be ONLY the JSON array, starting with '[' and ending w
 
 User's Goal: {goal}
 """
+
+rag_task_breakdown_prompt = """
+You are an expert project manager with contextual awareness. Your task is to break down a high-level goal into smaller, actionable sub-tasks, using the provided context to make the sub-tasks more specific and relevant.
+
+**Goal to Break Down:**
+{goal}
+
+**Relevant Context from Past Notes:**
+---
+{context}
+---
+
+Based on the goal and the context, generate a JSON array of sub-task objects. The sub-tasks should be logical next steps that incorporate details or themes found in the context.
+
+Each JSON object must have these keys:
+- "task": A clear, concise description of the sub-task.
+- "project": The name of the overall project or goal.
+- "due_date": A suggested due date in YYYY-MM-DD format. A null value is acceptable.
+- "status": The initial status, which should always be "To Do".
+
+Your entire response must be ONLY the JSON array, starting with '[' and ending with ']'.
+"""
