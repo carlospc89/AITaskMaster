@@ -5,3 +5,12 @@ uv.lock
 .venv
 .virtual_documents
 .ipynb_checkpoints
+.env
+.DS_Store
+*.log
+*.pyc
+*.pyc
+*.pyc
+*.pyc
+*.pyc
+*.pyc
