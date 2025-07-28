@@ -3,31 +3,26 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, time
 import altair as alt
+import os
 
-# Import the new centralized initializer
 from task_assistant.services import initialize_services
 from task_assistant.logger_config import log
 from task_assistant.prompts import prioritization_prompt
 
 # --- Initialization ---
-# This single function call will set up everything for the entire app session
 initialize_services()
+db_handler = st.session_state.db_handler
+abot = st.session_state.agent
 
-# --- Page Content ---
 st.set_page_config(
     page_title="Task Master AI - Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
-# --- Retrieve services from session_state ---
-# This is now the standard way to access shared services on any page
-db_handler = st.session_state.db_handler
-abot = st.session_state.agent
 
-
+# --- Helper Function ---
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
-    """ A utility to prevent Streamlit's Arrow serialization errors """
     df_copy = df.copy()
     for col in df_copy.columns:
         if pd.api.types.is_datetime64_any_dtype(df_copy[col]):
@@ -39,10 +34,10 @@ def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
     return df_copy
 
 
+# --- Main Page Content ---
 st.title("📊 Task Dashboard")
 st.markdown("Your AI-Powered Action Item Extractor and Planner.")
 
-# --- "What should I do next?" feature ---
 st.markdown("---")
 if st.button("🤖 What should I do next?", type="primary"):
     with st.spinner("AI is thinking..."):
@@ -60,14 +55,13 @@ if st.button("🤖 What should I do next?", type="primary"):
         else:
             st.warning("No tasks found in the database to prioritize.")
 
-# --- Data Loading and Graceful Handling of Empty State ---
+# --- Data Loading and Processing ---
 full_df = db_handler.get_all_action_items_as_df()
 
 if full_df.empty:
     st.info("👋 Welcome! Your task dashboard is ready. Add some tasks from the sidebar pages to get started.")
     st.stop()
 
-# --- Dashboard Display ---
 try:
     full_df = sanitize_df_for_streamlit(full_df)
 
@@ -76,16 +70,23 @@ try:
     else:
         active_tasks_df = pd.DataFrame()
 
-    today = pd.to_datetime(datetime.now().date())
-    overdue_tasks = active_tasks_df[active_tasks_df['due_date'] < today]
-    due_today_tasks = active_tasks_df[active_tasks_df['due_date'] == today]
+    # THIS IS THE FIX: First, create a temporary DataFrame that only includes tasks with a valid due date.
+    tasks_with_due_dates = active_tasks_df.dropna(subset=['due_date'])
 
+    today = pd.to_datetime(datetime.now().date())
+
+    # Now, perform the date comparisons on the clean, filtered data.
+    overdue_tasks = tasks_with_due_dates[tasks_with_due_dates['due_date'] < today]
+    due_today_tasks = tasks_with_due_dates[tasks_with_due_dates['due_date'] == today]
+
+    # --- Dashboard Metrics ---
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Active Tasks", len(active_tasks_df))
     col2.metric("Tasks Overdue", len(overdue_tasks), delta=f"{len(overdue_tasks)} urgent", delta_color="inverse")
     col3.metric("Tasks Due Today", len(due_today_tasks), delta=f"{len(due_today_tasks)} today", delta_color="off")
 
+    # --- Task Lists ---
     st.markdown("---")
     list_col1, list_col2 = st.columns(2, gap="large")
 
@@ -105,6 +106,7 @@ try:
             else:
                 st.write("No tasks due today.")
 
+    # --- Priority Chart ---
     st.markdown("---")
     st.subheader("Tasks by Priority")
 

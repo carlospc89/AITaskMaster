@@ -1,66 +1,65 @@
-from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated
-import operator
-from langchain_core.messages import AnyMessage, SystemMessage, ToolMessage, HumanMessage
-from datetime import datetime
-
-from .tools import all_tools
+# task_assistant/agent.py
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
+from langchain.output_parsers import PydanticOutputParser
+from .schemas import TaskList, Task  # Import both schemas
 from .logger_config import log
-
-
-class AgentState(TypedDict):
-    messages: Annotated[list[AnyMessage], operator.add]
+from datetime import datetime
+import json
 
 
 class Agent:
-    def __init__(self, model, system=""):
-        self.system = system
-        graph = StateGraph(AgentState)
-        graph.add_node("llm", self.call_model)
-        graph.add_node("action", self.take_action)
-        graph.add_conditional_edges("llm", self.exists_action, {True: "action", False: END})
-        graph.add_edge("action", "llm")
-        graph.set_entry_point("llm")
-        self.graph = graph.compile()
-        self.tools = {t.name: t for t in all_tools}
-        self.model = model.bind_tools(all_tools)
-        log.info("Agent initialized successfully.")
+    def __init__(self, model):
+        self.model = model
+        self.parser = PydanticOutputParser(pydantic_object=TaskList)
 
-    def exists_action(self, state: AgentState) -> bool:
-        result = state["messages"][-1]
-        return len(result.tool_calls) > 0
+    def get_structured_tasks(self, prompt_template: str, content: str) -> TaskList:
+        """
+        Processes content to extract structured tasks using a Pydantic parser.
+        This version is robust to the AI returning either a dict or a list.
+        """
+        current_date_str = datetime.now().strftime("%A, %Y-%m-%d")
 
-    def call_model(self, state: AgentState):
-        log.info("Calling the model...")
-        messages = state["messages"]
-        if self.system:
-            # This is the new, robust way to build the prompt.
-            # It uses an f-string to combine the date with the static prompt template.
-            current_date_str = datetime.now().strftime("%A, %Y-%m-%d")
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", prompt_template),
+            ("human", "{user_input}")
+        ])
 
-            header = f"Your reference date for all calculations is: **{current_date_str}**."
+        # We get the raw string output from the model first
+        chain = prompt | self.model
 
-            final_system_prompt = f"{header}\n\n{self.system}"
+        log.info("Invoking LLM chain to get raw output...")
+        try:
+            raw_result = chain.invoke({
+                "format_instructions": self.parser.get_format_instructions(),
+                "current_date": current_date_str,
+                "user_input": content
+            })
+            # Clean the raw output from the AI
+            raw_json_str = raw_result.content.strip().replace("```json", "").replace("```", "").strip()
 
-            messages = [SystemMessage(content=final_system_prompt)] + messages
+            # Now, we manually parse and validate
+            data = json.loads(raw_json_str)
 
-        message = self.model.invoke(messages)
-        return {"messages": [message]}
+            # If the AI returns a list, wrap it in the expected dictionary
+            if isinstance(data, list):
+                data = {"tasks": data}
 
-    def take_action(self, state: AgentState):
-        tool_calls = state["messages"][-1].tool_calls
-        results = []
-        for t in tool_calls:
-            log.info(f"Calling tool: {t['name']} with args: {t['args']}")
-            result = self.tools[t["name"]].invoke(t["args"])
-            results.append(ToolMessage(tool_call_id=t["id"], name=t["name"], content=str(result)))
-        log.info("Returning to the model with tool results.")
-        return {"messages": results}
+            # Now, validate with the Pydantic model
+            parsed_object = TaskList.model_validate(data)
+            return parsed_object
+
+        except Exception as e:
+            log.error(f"Failed to parse LLM output: {e}", exc_info=True)
+            return TaskList(tasks=[])
 
     def get_prioritization(self, tasks_json: str, system_prompt: str) -> str:
+        """
+        Makes a one-off call to the model for a specific task like prioritization.
+        """
         log.info("Requesting prioritization from the model...")
         messages = [
-            SystemMessage(content=system_prompt),
+            {"role": "system", "content": system_prompt},
             HumanMessage(content=tasks_json)
         ]
         response = self.model.invoke(messages)

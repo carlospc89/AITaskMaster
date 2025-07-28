@@ -1,24 +1,31 @@
 # task_assistant/database_handler.py
 import sqlite3
-import hashlib
 import pandas as pd
-from datetime import datetime
 import json
+from datetime import datetime, date
+
+# Use the correct relative import for intra-package modules
 from .logger_config import log
-from .vector_store_handler import VectorStoreHandler
 
 
 class DatabaseHandler:
-    def __init__(self, vector_store, db_name="task_master.db"):
+    """
+    Manages the SQLite database connection and core CRUD operations (Read, Update, Delete).
+    Data ingestion is handled by the DataIngestor class.
+    """
+
+    def __init__(self, db_name="task_master.db"):
         try:
             self.conn = sqlite3.connect(db_name, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
-            # The vector_store is now passed in from the outside
-            self.vector_store = vector_store
         except sqlite3.Error as e:
             log.error(f"Database connection error: {e}")
             raise
         self._create_tables()
+
+    def get_connection(self):
+        """Provides direct access to the connection object for other services."""
+        return self.conn
 
     def _create_tables(self):
         try:
@@ -105,7 +112,7 @@ class DatabaseHandler:
                 current_task_data = json.loads(result['task_data'])
 
                 for key, value in updates.items():
-                    if isinstance(value, pd.Timestamp):
+                    if isinstance(value, (pd.Timestamp, date)):
                         current_task_data[key] = value.strftime('%Y-%m-%d')
                     else:
                         current_task_data[key] = value
@@ -115,36 +122,6 @@ class DatabaseHandler:
                 cursor.execute("UPDATE action_items SET task_data = ? WHERE id = ?", (updated_task_json, item_id))
         except sqlite3.Error as e:
             log.error(f"DB: DATABASE ERROR during JSON update for ID {item_id}: {e}")
-
-    def insert_data(self, source_name: str, content: str, tasks: list[dict]):
-        if self.check_source_exists(content):
-            log.warning("Attempted to insert a duplicate source document. Operation cancelled.")
-            return
-        try:
-            with self.conn:
-                cursor = self.conn.cursor()
-                content_hash = self._calculate_hash(content)
-                processed_at = datetime.now()
-                cursor.execute(
-                    "INSERT INTO source_documents (source_name, content_hash, processed_at) VALUES (?, ?, ?)",
-                    (source_name, content_hash, processed_at)
-                )
-                source_document_id = cursor.lastrowid
-                created_at = datetime.now()
-
-                for task in tasks:
-                    task_json = json.dumps(task)
-                    cursor.execute(
-                        "INSERT INTO action_items (source_document_id, task_data, created_at) VALUES (?, ?, ?)",
-                        (source_document_id, task_json, created_at)
-                    )
-            log.info(f"SUCCESS: Inserted {len(tasks)} tasks into SQLite for source '{source_name}'.")
-
-            if not source_name.startswith("Jira Import"):
-                self.vector_store.add_document(content)
-
-        except Exception as e:
-            log.error(f"DATABASE ERROR during insert for source '{source_name}': {e}", exc_info=True)
 
     def delete_action_items(self, item_ids: list[int]):
         if not item_ids: return
@@ -165,12 +142,3 @@ class DatabaseHandler:
             self._create_tables()
         except sqlite3.Error as e:
             log.error(f"Failed to drop tables: {e}")
-
-    def _calculate_hash(self, content: str) -> str:
-        return hashlib.sha256(content.encode('utf-8')).hexdigest()
-
-    def check_source_exists(self, content: str) -> bool:
-        cursor = self.conn.cursor()
-        content_hash = self._calculate_hash(content)
-        cursor.execute("SELECT id FROM source_documents WHERE content_hash = ?", (content_hash,))
-        return cursor.fetchone() is not None

@@ -1,6 +1,8 @@
+# pages/4_🗃️_History_&_Planning.py
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+
 from task_assistant.services import initialize_services
 from task_assistant.logger_config import log
 
@@ -8,7 +10,11 @@ from task_assistant.logger_config import log
 initialize_services()
 db_handler = st.session_state.db_handler
 
-st.set_page_config(page_title="History & Planning", page_icon="🗃️", layout="wide")
+st.set_page_config(
+    page_title="History & Planning",
+    page_icon="🗃️",
+    layout="wide"
+)
 
 
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
@@ -25,26 +31,58 @@ def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
 
 # --- Page Content ---
 st.subheader("Action Item History & Planning")
-st.info("Here you can view, edit, delete, and filter all of your tasks.")
-
-st.markdown("#### 🔎 Filter and Search Tasks")
+st.info("Here you can triage tasks that need a due date, or filter and edit your scheduled tasks below.")
 
 full_df = db_handler.get_all_action_items_as_df()
+
+if full_df.empty:
+    st.warning("No tasks found in the database. Add some tasks from the sidebar pages to get started!")
+    st.stop()
+
 full_df = sanitize_df_for_streamlit(full_df)
 
-# --- Filter Controls ---
+# --- Split the DataFrame into two sections ---
+tasks_with_due_date = full_df.dropna(subset=['due_date'])
+tasks_without_due_date = full_df[full_df['due_date'].isna()]
+
+# --- Section for Tasks without a Due Date ---
+st.markdown("---")
+with st.expander(f"**🗓️ Triage Tasks without a Due Date ({len(tasks_without_due_date)})**", expanded=True):
+    if not tasks_without_due_date.empty:
+        for _, row in tasks_without_due_date.iterrows():
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                st.markdown(f"- {row['task_description']}")
+            with col2:
+                new_date = st.date_input("Assign Due Date", key=f"date_assign_{row['id']}", value=None)
+            with col3:
+                st.write("")
+                st.write("")
+                if st.button("Save Date", key=f"save_date_{row['id']}"):
+                    if new_date:
+                        db_handler.update_action_item(row['id'], {'due_date': new_date})
+                        st.toast(f"Due date added for task {row['id']}!")
+                        st.rerun()
+                    else:
+                        st.warning("Please select a date first.")
+    else:
+        st.write("All tasks have been assigned a due date. Great job!")
+
+# --- Main Data Grid for Scheduled Tasks ---
+st.markdown("---")
+st.markdown("#### 🔎 Filter and Search Scheduled Tasks")
+
 filter_cols = st.columns(5)
 with filter_cols[0]:
-    # THIS IS THE FIX: We give the text input a simple label for alignment.
     search_query = st.text_input("Search", placeholder="Filter by keyword...")
 with filter_cols[1]:
-    project_list = ["All"] + sorted(full_df['project'].dropna().unique().tolist())
+    project_list = ["All"] + sorted(tasks_with_due_date['project'].dropna().unique().tolist())
     selected_project = st.selectbox("Project", project_list)
 with filter_cols[2]:
-    priority_list = ["All"] + sorted(full_df['priority'].dropna().unique().tolist())
+    priority_list = ["All"] + sorted(tasks_with_due_date['priority'].dropna().unique().tolist())
     selected_priority = st.selectbox("Priority", priority_list)
 with filter_cols[3]:
-    status_list = ["All"] + sorted(full_df['status'].dropna().unique().tolist())
+    status_list = ["All"] + sorted(tasks_with_due_date['status'].dropna().unique().tolist())
     selected_status = st.selectbox("Status", status_list)
 with filter_cols[4]:
     date_range = st.date_input(
@@ -53,8 +91,8 @@ with filter_cols[4]:
         key="date_range_picker"
     )
 
-# --- Apply Filters ---
-filtered_df = full_df.copy()
+# Apply filters to the DataFrame that already has due dates
+filtered_df = tasks_with_due_date.copy()
 if search_query:
     filtered_df = filtered_df[filtered_df['task_description'].str.contains(search_query, case=False, na=False)]
 if selected_project != "All":
