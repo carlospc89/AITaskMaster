@@ -9,12 +9,12 @@ from .vector_store_handler import VectorStoreHandler
 
 
 class DatabaseHandler:
-    def __init__(self, db_name="task_master.db"):
+    def __init__(self, vector_store, db_name="task_master.db"):
         try:
             self.conn = sqlite3.connect(db_name, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
-            # Initialize the vector store handler
-            self.vector_store = VectorStoreHandler()
+            # The vector_store is now passed in from the outside
+            self.vector_store = vector_store
         except sqlite3.Error as e:
             log.error(f"Database connection error: {e}")
             raise
@@ -75,13 +75,11 @@ class DatabaseHandler:
         if not data_list:
             return self.get_empty_df()
 
-        df = pd.DataFrame.from_records(data_list)
-
         expected_cols = [
             'id', 'task_description', 'due_date', 'project',
             'priority', 'status', 'created_at'
         ]
-        df = df.reindex(columns=expected_cols)
+        df = pd.DataFrame.from_records(data_list, columns=expected_cols)
 
         df['created_at'] = pd.to_datetime(df['created_at'], errors='coerce')
         df['due_date'] = pd.to_datetime(df['due_date'], errors='coerce')
@@ -89,7 +87,6 @@ class DatabaseHandler:
         return df
 
     def get_empty_df(self) -> pd.DataFrame:
-        """Returns a correctly structured and typed empty DataFrame."""
         columns = [
             'id', 'task_description', 'due_date', 'project',
             'priority', 'status', 'created_at'

@@ -1,18 +1,14 @@
-# pages/5_🗓️_Calendar.py
 import streamlit as st
 import pandas as pd
 from streamlit_calendar import calendar
-from task_assistant.database_handler import DatabaseHandler
+from task_assistant.services import initialize_services
 from task_assistant.logger_config import log
-st.set_page_config(layout="wide")
 
-# --- Initialization ---
-def init_calendar_services():
-    db_handler = DatabaseHandler()
-    return db_handler
+# --- Initialization and Service Retrieval ---
+initialize_services()
+db_handler = st.session_state.db_handler
 
-
-db_handler = init_calendar_services()
+st.set_page_config(page_title="Calendar", page_icon="🗓️", layout="wide")
 
 
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:

@@ -1,27 +1,14 @@
-# pages/3_🗃️_History_&_Planning.py
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime, timedelta
-
-from task_assistant.database_handler import DatabaseHandler
+from task_assistant.services import initialize_services
 from task_assistant.logger_config import log
 
-# Set the page to wide mode for a better layout
-st.set_page_config(
-    page_title="History & Planning",
-    page_icon="🗃️",
-    layout="wide"
-)
+# --- Initialization and Service Retrieval ---
+initialize_services()
+db_handler = st.session_state.db_handler
 
-
-# --- Initialization ---
-def init_page_services():
-    db_handler = DatabaseHandler()
-    return db_handler
-
-
-db_handler = init_page_services()
+st.set_page_config(page_title="History & Planning", page_icon="🗃️", layout="wide")
 
 
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
