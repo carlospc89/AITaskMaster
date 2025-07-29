@@ -14,3 +14,6 @@ uv.lock
 *.pyc
 *.pyc
 *.pyc
+doc_mapping.pkl
+task_master.db
+task_master_index.faiss
