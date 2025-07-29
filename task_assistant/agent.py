@@ -2,10 +2,11 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage
 from langchain.output_parsers import PydanticOutputParser
-from .schemas import TaskList, Task  # Import both schemas
+from .schemas import TaskList, Task
 from .logger_config import log
 from datetime import datetime
 import json
+import re  # Import the regular expression module
 
 
 class Agent:
@@ -15,8 +16,8 @@ class Agent:
 
     def get_structured_tasks(self, prompt_template: str, content: str) -> TaskList:
         """
-        Processes content to extract structured tasks using a Pydantic parser.
-        This version is robust to the AI returning either a dict or a list.
+        Processes content to extract structured tasks. This version is resilient
+        to cases where the LLM returns conversational text alongside the JSON.
         """
         current_date_str = datetime.now().strftime("%A, %Y-%m-%d")
 
@@ -25,7 +26,6 @@ class Agent:
             ("human", "{user_input}")
         ])
 
-        # We get the raw string output from the model first
         chain = prompt | self.model
 
         log.info("Invoking LLM chain to get raw output...")
@@ -35,28 +35,34 @@ class Agent:
                 "current_date": current_date_str,
                 "user_input": content
             })
-            # Clean the raw output from the AI
-            raw_json_str = raw_result.content.strip().replace("```json", "").replace("```", "").strip()
+            raw_response_text = raw_result.content
 
-            # Now, we manually parse and validate
-            data = json.loads(raw_json_str)
+            # THIS IS THE FIX: Instead of assuming the whole response is JSON,
+            # we search for the JSON block within the text.
+            start_index = raw_response_text.find('[')
+            end_index = raw_response_text.rfind(']')
 
-            # If the AI returns a list, wrap it in the expected dictionary
-            if isinstance(data, list):
-                data = {"tasks": data}
+            if start_index != -1 and end_index != -1:
+                json_str = raw_response_text[start_index: end_index + 1].strip()
+                log.info(f"Extracted JSON string: {json_str}")
 
-            # Now, validate with the Pydantic model
-            parsed_object = TaskList.model_validate(data)
-            return parsed_object
+                # Now that we have a clean JSON string, we can parse it
+                data = json.loads(json_str)
+
+                if isinstance(data, list):
+                    data = {"tasks": data}
+
+                parsed_object = TaskList.model_validate(data)
+                return parsed_object
+            else:
+                log.warning(f"AI returned a response, but no JSON array was found in it: '{raw_response_text}'")
+                return TaskList(tasks=[])
 
         except Exception as e:
-            log.error(f"Failed to parse LLM output: {e}", exc_info=True)
+            log.error(f"Failed to get structured tasks from LLM: {e}", exc_info=True)
             return TaskList(tasks=[])
 
     def get_prioritization(self, tasks_json: str, system_prompt: str) -> str:
-        """
-        Makes a one-off call to the model for a specific task like prioritization.
-        """
         log.info("Requesting prioritization from the model...")
         messages = [
             {"role": "system", "content": system_prompt},
